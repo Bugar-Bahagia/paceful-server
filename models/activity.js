@@ -8,12 +8,67 @@ module.exports = (sequelize, DataTypes) => {
   }
   Activity.init(
     {
-      UserId: DataTypes.INTEGER,
-      typeName: DataTypes.STRING,
-      duration: DataTypes.INTEGER,
-      distance: DataTypes.INTEGER,
+      UserId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+          validate: {
+          notEmpty: {
+            msg: 'UserId cannot be empty',
+          },
+          notNull: {
+            msg: 'UserId cannot be null',
+          },
+        },
+      },
+      typeName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notEmpty: {
+            msg: 'Type of activity cannot be empty',
+          },
+          notNull: {
+            msg: 'Type of activity cannot be null',
+          },
+        },
+      },
+      duration: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+          notEmpty: {
+            msg: 'Duration cannot be empty',
+          },
+          notNull: {
+            msg: 'Duration cannot be null',
+          },
+        },
+      },
+      distance: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+          notEmpty: {
+            msg: 'Distance cannot be empty',
+          },
+          notNull: {
+            msg: 'Distance cannot be null',
+          },
+        },
+      },
       caloriesBurned: DataTypes.INTEGER,
-      activityDate: DataTypes.DATE,
+      activityDate: {
+        type: DataTypes.DATE,
+        allowNull: false, 
+        validate: {
+          notEmpty: {
+            msg: 'Activity date cannot be empty',
+          },
+          notNull: {
+            msg: 'Activity date cannot be null',
+          },
+        },
+      },
       notes: DataTypes.STRING,
     },
     {
