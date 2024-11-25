@@ -33,7 +33,7 @@ class GoalController {
 
   static async findByPk(req, res, next) {
     try {
-      const goal = await Goal.findByPk(req.params.id);
+      const goal = req.goal;
       res.json(goal);
     } catch (error) {
       console.log(error);
@@ -43,10 +43,7 @@ class GoalController {
 
   static async destroyByPk(req, res, next) {
     try {
-      const goal = await Goal.findByPk(req.params.id);
-      if (!goal) {
-        throw { name: 'NotFound', message: 'Goal not found' };
-      }
+      const goal = req.goal;
       await goal.destroy();
       res.json({ message: 'Goal deleted successfully' });
     } catch (error) {
@@ -58,10 +55,7 @@ class GoalController {
   static async updateByPk(req, res, next) {
     const { targetValue, startDate, endDate } = req.body;
     try {
-      const goal = await Goal.findByPk(req.params.id);
-      if (!goal) {
-        throw { name: 'NotFound', message: 'Goal not found' };
-      }
+      const goal = req.goal;
       goal.targetValue = targetValue !== undefined ? targetValue : goal.targetValue;
       goal.startDate = startDate !== undefined ? startDate : goal.startDate;
       goal.endDate = endDate !== undefined ? endDate : goal.endDate;
