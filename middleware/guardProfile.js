@@ -7,20 +7,24 @@ module.exports = async function guardProfile(req, res, next) {
     return next({ name: "NotAuthorized", message: "User not authenticated" });
   }
 
-    const { id } = req.params;
+    const id = req.user.id;
 
+    // console.log(id);
     
+
     try {
-      const profile = await UserProfile.findByPk(id);
+      const profile = await UserProfile.findOne({
+        where: { UserId: id },
+      });;
 
       if (!profile) {
         throw { name: "NotFound", message: "Profile Not Found" };
       }
 
       else if (profile.UserId === user.id) {
+        req.profile = profile;
         return next();
       } else {
-       
         throw { name: 'Forbidden', message: 'You are not authorized' };
       }
     } catch (error) {

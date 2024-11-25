@@ -5,25 +5,22 @@ module.exports = async function authentication(req, res, next) {
   // console.log(req.headers, '<<headers');
   const bearerToken = req.headers.authorization;
   if (!bearerToken) {
-    return res.status(401).json({ message: 'Unauthorized Error' });
+    throw { name: 'JsonWebTokenError' };
   }
 
   const [, token] = bearerToken.split(' ');
   console.log({ token }, 'ini token');
 
   if (!token) {
-    return res.status(401).json({ message: 'Invalid token' });
+    throw { name: 'JsonWebTokenError'};
   }
 
   try {
     const data = verifyToken(token);
-
     const user = await User.findByPk(data.id);
-
     if (!user) {
-      return res.status(401).json({ message: 'Invalid Token' });
+      throw { name: 'JsonWebTokenError' };
     }
-
     req.user = user;
 
     next();
