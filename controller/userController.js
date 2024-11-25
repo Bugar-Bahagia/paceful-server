@@ -1,5 +1,6 @@
 const { hashPassword } = require("../helpers/bcrypt");
 const { User, UserProfile } = require("../models");
+const { sequelize } = require("../models");
 
 
 class UserController {
@@ -11,13 +12,13 @@ class UserController {
 
         const hashedPassword = hashPassword(password);
 
-        console.log(hashPassword);
+        // console.log(hashedPassword);
         
       
         const user = await User.create(
           {
             email,
-            hashedPassword,
+            password: hashedPassword,
           },
           { transaction: t }
         );
@@ -27,7 +28,7 @@ class UserController {
           {
             name,
             dateOfBirth,
-            userId: user.id,
+            UserId: user.id,
           },
           { transaction: t }
         );
