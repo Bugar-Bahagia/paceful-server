@@ -9,8 +9,6 @@ app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+app.use(require('./routers'));
 
 module.exports = app;
