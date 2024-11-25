@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       typeName: {
         type: DataTypes.ENUM,
+        values: ['running', 'cycling', 'hiking', 'walking', 'swimming'],
         allowNull: false,
         validate: {
           notEmpty: {

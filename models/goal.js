@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       UserId: DataTypes.INTEGER,
       typeName: {
         type: DataTypes.ENUM,
+        values: ['steps', 'distance', 'calories burned', 'duration'],
         allowNull: false,
         validate: {
           notEmpty: {
