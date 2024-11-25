@@ -21,13 +21,15 @@ module.exports = {
         onDelete: 'cascade',
       },
       typeName: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM,
+        values: ['steps', 'distance', 'calories burned', 'duration'],
       },
       targetValue: {
         type: Sequelize.INTEGER,
       },
       currentValue: {
         type: Sequelize.INTEGER,
+        defaultValue: 0,
       },
       startDate: {
         type: Sequelize.DATE,
@@ -37,6 +39,7 @@ module.exports = {
       },
       isAchieved: {
         type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       createdAt: {
         allowNull: false,

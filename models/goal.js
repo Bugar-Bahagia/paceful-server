@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       UserId: DataTypes.INTEGER,
       typeName: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
         allowNull: false,
         validate: {
           notEmpty: {
@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
           notNull: {
             msg: 'Type of activity cannot be null',
           },
+          isIn: { args: [['steps', 'distance', 'calories burned', 'duration']], msg: 'Must be steps/distance/calories burned/duration' },
         },
       },
       targetValue: {
@@ -60,8 +61,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       isAchieved: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false},
+      },
     },
     {
       sequelize,

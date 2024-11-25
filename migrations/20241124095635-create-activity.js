@@ -21,7 +21,8 @@ module.exports = {
         onDelete: 'cascade',
       },
       typeName: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM,
+        values: ['running', 'cycling', 'hiking', 'walking', 'swimming'],
       },
       duration: {
         type: Sequelize.INTEGER,

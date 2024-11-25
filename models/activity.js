@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       UserId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-          validate: {
+        validate: {
           notEmpty: {
             msg: 'UserId cannot be empty',
           },
@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       typeName: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
         allowNull: false,
         validate: {
           notEmpty: {
@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
           notNull: {
             msg: 'Type of activity cannot be null',
           },
+          isIn: { args: [['running', 'cycling', 'hiking', 'walking', 'swimming']], msg: 'Must be running/cycling/hiking/walking/swimming' },
         },
       },
       duration: {
@@ -59,7 +60,7 @@ module.exports = (sequelize, DataTypes) => {
       caloriesBurned: DataTypes.INTEGER,
       activityDate: {
         type: DataTypes.DATE,
-        allowNull: false, 
+        allowNull: false,
         validate: {
           notEmpty: {
             msg: 'Activity date cannot be empty',
