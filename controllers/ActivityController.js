@@ -52,10 +52,10 @@ class ActivityController {
         }
 
         const isAchieved = updatedValue >= goal.targetValue;
-        await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id } });
+        await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
-      res.json(newActivity);
+      res.status(201).json(newActivity);
     } catch (error) {
       console.log(error);
       await t.rollback();
