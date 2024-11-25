@@ -50,7 +50,6 @@ class ActivityController {
             updatedValue += newActivity.duration;
             break;
         }
-
         const isAchieved = updatedValue >= goal.targetValue;
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
