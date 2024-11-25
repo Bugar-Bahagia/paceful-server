@@ -7,10 +7,12 @@ module.exports = async function guardActivity(req, res, next) {
     return next({ name: 'Unauthorized', message: 'User not authenticated' });
   }
 
-  const { id } = req.params;
+  const id = req.user.id
 
   try {
-    const activity = await Activity.findByPk(id);
+    const activity = await Activity.findOne({
+      where: { UserId: id },
+    });
 
     if (!activity) {
       throw { name: 'NotFound', message: 'Activity Not Found' };

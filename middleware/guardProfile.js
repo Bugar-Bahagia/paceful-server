@@ -15,7 +15,7 @@ module.exports = async function guardProfile(req, res, next) {
     try {
       const profile = await UserProfile.findOne({
         where: { UserId: id },
-      });;
+      });
 
       if (!profile) {
         throw { name: "NotFound", message: "Profile Not Found" };
