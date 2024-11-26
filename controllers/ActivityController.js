@@ -113,10 +113,11 @@ class ActivityController {
         const isAchieved = updatedValue >= goal.targetValue;
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
-
+      await t.commit();
       res.json(activity);
     } catch (error) {
       console.log(error);
+      await t.rollback();
       next(error);
     }
   }
@@ -160,9 +161,11 @@ class ActivityController {
         const isAchieved = updatedValue >= goal.targetValue;
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
+      await t.commit();
       res.json({ message: 'Activity deleted successfully' });
     } catch (error) {
       console.log(error);
+      await t.rollback();
       next(error);
     }
   }
