@@ -1,5 +1,6 @@
 const calculateCalories = require('../helpers/calculateCalories');
-const { Activity, Goal } = require('../models/');
+const { Op } = require('sequelize');
+const { Activity, Goal, sequelize } = require('../models/');
 
 class ActivityController {
   static async findAll(req, res, next) {
