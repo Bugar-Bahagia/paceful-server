@@ -1,7 +1,10 @@
+const { defaults } = require('pg');
 const { comparePassword } = require('../helpers/bcrypt');
 const { signToken } = require('../helpers/jwt');
 const { User, UserProfile } = require('../models');
 const { sequelize } = require('../models');
+const { OAuth2Client } = require('google-auth-library');
+
 
 module.exports = class AuthController {
   static async register(req, res, next) {
@@ -78,32 +81,56 @@ module.exports = class AuthController {
     }
   }
 
+
   static async googleLogin(req, res, next) {
-    const { token } = req.headers;
-    const client = new OAuth2Client();
+    const token = req.headers.authorization?.split(" ")[1]
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" })
+    }
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
     try {
       const ticket = await client.verifyIdToken({
         idToken: token,
-        audience: '1050505246453-n8i7i8caqa6eq79np0lsddm12tmvcfjk.apps.googleusercontent.com',
-      });
-      const payload = ticket.getPayload();
-      console.log(payload);
+        audience: process.env.GOOGLE_CLIENT_ID,
+      })
+      const payload = ticket.getPayload()
 
-      const [user, created] = await User.findOrCreate({
-        where: { email: payload.email },
-        defaults: {
-          name: payload.name,
-          email: payload.email,
-          password: 'password-google',
-          dateOfBirth: new Date(),
-        },
-        hooks: false,
-      });
-      const access_token = signToken({ id: user.id, email: user.email });
-      return res.status(200).json({ access_token });
+      if (!payload.email || !payload.name) {
+        throw { name: "BadRequest", message: "Invalid Google token payload" };
+      }
+      // console.log(payload)
+
+      const result = await sequelize.transaction(async (t) => {
+        const [user, created] = await User.findOrCreate({
+          where: { email: payload.email },
+          defaults: { 
+            email: payload.email,
+            password: 'password-google',
+          },
+          transaction: t,
+          hooks: false,
+        })
+
+        const userProfile = await UserProfile.findOrCreate({
+          where: { name: payload.name},
+          defaults: {
+            name: payload.name,
+            dateOfBirth: new Date(),
+            UserId: user.id
+          },
+          transaction: t
+        })
+
+        return { user, userProfile}
+      })
+
+      const { user } = result;
+      
+      const access_token = signToken({ id: user.id, email: user.email })
+      return res.status(200).json({ access_token })
     } catch (err) {
-      console.log(err);
-      next(err);
+      console.log(err)
+      next(err)
     }
   }
 
