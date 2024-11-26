@@ -3,7 +3,7 @@ if (process.env.NODE_ENV != 'production') {
 }
 const express = require('express');
 const cors = require('cors');
-const ErrorHandler = require('./middleware/ErrorHandler');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -13,6 +13,6 @@ app.use(cors());
 
 app.use(require('./routers'));
 
-app.use(ErrorHandler);
+app.use(errorHandler);
 
 module.exports = app;

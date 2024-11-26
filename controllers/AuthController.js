@@ -3,7 +3,7 @@ const { signToken } = require('../helpers/jwt');
 const { User, UserProfile } = require('../models');
 const { sequelize } = require('../models');
 
-class UserController {
+module.exports = class AuthController {
   static async register(req, res, next) {
     const { name, dateOfBirth, email, password } = req.body;
 
@@ -106,6 +106,8 @@ class UserController {
       next(err);
     }
   }
+
+  
 }
 
-module.exports = UserController;
+
