@@ -61,6 +61,7 @@ class GoalController {
       goal.startDate = startDate !== undefined ? startDate : goal.startDate;
       goal.endDate = endDate !== undefined ? endDate : goal.endDate;
       goal.currentValue = await calculateCurrentValue(goal);
+      goal.isAchieved = goal.currentValue >= goal.targetValue;
       await goal.save();
       res.json(goal);
     } catch (error) {
