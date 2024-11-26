@@ -8,7 +8,7 @@ router.get('/', GoalController.findAll);
 router.post('/', GoalController.create);
 router.get('/achieved', GoalController.findAchieved);
 router.get('/:id', guardGoal, GoalController.findByPk);
-router.put('/:id', guardGoal, GoalController.updateByPk);
-router.delete('/:id', guardGoal, GoalController.destroyByPk);
+router.put('/:id', guardGoal, GoalController.update);
+router.delete('/:id', guardGoal, GoalController.destroy);
 
 module.exports = router;

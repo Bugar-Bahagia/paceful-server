@@ -1,4 +1,5 @@
 const { Activity } = require('../models/');
+const { Op } = require('sequelize');
 
 async function calculateCurrentValue(goal) {
   let currentValue = 0;
