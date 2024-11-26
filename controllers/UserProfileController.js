@@ -2,10 +2,9 @@
 
 module.exports = class UserProfileController {
   static async updateProfile(req, res, next) {
-    const { name, dateOfBirth } = req.body;
-    const profile = req.profile;
-
     try {
+      const { name, dateOfBirth } = req.body;
+      const profile = req.profile;
       await profile.update({
         name,
         dateOfBirth,
