@@ -36,7 +36,7 @@ class UserController {
         data: result,
       });
     } catch (error) {
-      console.error('Error during transaction:', error);
+      console.error( error);
       next(error);
     }
   }
@@ -95,6 +95,7 @@ class UserController {
           name: payload.name,
           email: payload.email,
           password: 'password-google',
+          dateOfBirth: new Date(),
         },
         hooks: false,
       });
