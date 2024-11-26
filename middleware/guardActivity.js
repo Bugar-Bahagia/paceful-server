@@ -1,16 +1,15 @@
 const { Activity } = require('../models');
 
 module.exports = async function guardActivity(req, res, next) {
-  let user = req.user;
-
-  if (!user) {
-    throw { name: 'Unauthorized', message: 'User not authenticated' };
-  }
-
-  const id = req.params.id
+  const id = req.params.id;
 
   try {
-    const activity = await Activity.findByPk(id)
+    let user = req.user;
+
+    if (!user) {
+      throw { name: 'Unauthorized', message: 'User not authenticated' };
+    }
+    const activity = await Activity.findByPk(id);
 
     if (!activity) {
       throw { name: 'NotFound', message: 'Activity Not Found' };

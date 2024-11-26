@@ -9,17 +9,11 @@ module.exports = class UserProfileController {
         name,
         dateOfBirth,
       });
-       
-      res
-        .status(200)
-        .json({ message: "Your Profile has been updated", data: profile });
 
+      res.status(200).json({ message: 'Your Profile has been updated', data: profile });
     } catch (error) {
       console.error(error);
       next(error);
     }
-  
   }
-
-
-}
+};

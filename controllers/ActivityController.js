@@ -1,5 +1,6 @@
 const calculateCalories = require('../helpers/calculateCalories');
-const { Activity, Goal } = require('../models/');
+const { Op } = require('sequelize');
+const { Activity, Goal, sequelize } = require('../models/');
 
 class ActivityController {
   static async findAll(req, res, next) {
@@ -16,6 +17,16 @@ class ActivityController {
     }
   }
 
+  static async findByPk(req, res, next) {
+    try {
+      const activity = req.activity;
+      res.json(activity);
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+
   static async create(req, res, next) {
     const { typeName, duration, distance, notes, activityDate } = req.body;
     const caloriesBurned = calculateCalories(typeName, duration);
@@ -26,8 +37,8 @@ class ActivityController {
       const goals = await Goal.findAll({
         where: {
           UserId: newActivity.UserId,
-          startDate: { [Op.gte]: newActivity.activityDate },
-          endDate: { [Op.lte]: newActivity.activityDate },
+          startDate: { [Op.lte]: newActivity.activityDate },
+          endDate: { [Op.gte]: newActivity.activityDate },
         },
       });
       for (let goal of goals) {
@@ -35,12 +46,12 @@ class ActivityController {
         switch (goal.typeName) {
           case 'steps':
             if (newActivity.typeName === 'running' || newActivity.typeName === 'walking') {
-              const steps = Math.round(distance * 1.3123);
+              const steps = Math.round(newActivity.distance * 1.3123);
               updatedValue += steps;
             }
             break;
           case 'distance':
-            updatedValue += distance;
+            updatedValue += newActivity.distance;
             break;
           case 'calories burned':
             updatedValue += newActivity.caloriesBurned;
@@ -68,7 +79,7 @@ class ActivityController {
     try {
       let caloriesBurned = activity.caloriesBurned;
       if (duration !== undefined) {
-        caloriesBurned = calculateCalories(activity.typeName, duration);
+        caloriesBurned = calculateCalories(activity.typeName, +duration);
       }
 
       const oldDuration = activity.duration;
@@ -85,8 +96,8 @@ class ActivityController {
       const goals = await Goal.findAll({
         where: {
           UserId: activity.UserId,
-          startDate: { [Op.gte]: activity.activityDate },
-          endDate: { [Op.lte]: activity.activityDate },
+          startDate: { [Op.lte]: activity.activityDate },
+          endDate: { [Op.gte]: activity.activityDate },
         },
       });
 
@@ -96,18 +107,18 @@ class ActivityController {
           case 'steps':
             if (activity.typeName === 'running' || activity.typeName === 'walking') {
               const oldSteps = Math.round(oldDistance * 1.3123);
-              const newSteps = Math.round(distance * 1.3123);
+              const newSteps = Math.round(activity.distance * 1.3123);
               updatedValue = updatedValue - oldSteps + newSteps;
             }
             break;
           case 'distance':
-            updatedValue = updatedValue - oldDistance + distance;
+            updatedValue = updatedValue - oldDistance + +activity.distance;
             break;
           case 'calories burned':
-            updatedValue = updatedValue - oldCaloriesBurned + caloriesBurned;
+            updatedValue = updatedValue - +oldCaloriesBurned + caloriesBurned;
             break;
           default:
-            updatedValue = updatedValue - oldDuration + duration;
+            updatedValue = updatedValue - oldDuration + +activity.duration;
             break;
         }
         const isAchieved = updatedValue >= goal.targetValue;
@@ -134,8 +145,8 @@ class ActivityController {
       const goals = await Goal.findAll({
         where: {
           UserId: activity.UserId,
-          startDate: { [Op.gte]: activity.activityDate },
-          endDate: { [Op.lte]: activity.activityDate },
+          startDate: { [Op.lte]: activity.activityDate },
+          endDate: { [Op.gte]: activity.activityDate },
         },
       });
 
@@ -157,6 +168,9 @@ class ActivityController {
           default:
             updatedValue -= oldDuration;
             break;
+        }
+        if (updatedValue < 0) {
+          updatedValue = 0;
         }
         const isAchieved = updatedValue >= goal.targetValue;
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });

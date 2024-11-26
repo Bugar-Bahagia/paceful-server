@@ -1,15 +1,14 @@
 const { UserProfile, Goal } = require('../models');
 
 module.exports = async function guardGoal(req, res, next) {
-  let user = req.user;
-
-  if (!user) {
-    throw { name: 'Unauthorized', message: 'User not authenticated' }
-  }
-
   const id = req.params.id;
 
   try {
+    let user = req.user;
+
+    if (!user) {
+      throw { name: 'Unauthorized', message: 'User not authenticated' };
+    }
     const goal = await Goal.findByPk(id);
 
     if (!goal) {

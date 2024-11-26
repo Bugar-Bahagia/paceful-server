@@ -36,24 +36,23 @@ class UserController {
         data: result,
       });
     } catch (error) {
-      console.error( error);
+      console.error(error);
       next(error);
     }
   }
 
   static async login(req, res, next) {
-   
-    try {
-      const { email, password } = req.body;
+    const { email, password } = req.body;
 
+    try {
       if (!email) {
-        throw ({ name: 'BadRequest', message: 'Email is required' });
+        throw { name: 'BadRequest', message: 'Email is required' };
       }
-  
+
       if (!password) {
-        throw ({ name: 'BadRequest', message: 'Password is required' });
+        throw { name: 'BadRequest', message: 'Password is required' };
       }
-  
+
       const user = await User.findOne({
         where: { email },
       });

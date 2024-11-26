@@ -1,5 +1,6 @@
 const calculateCurrentValue = require('../helpers/calculateCurrentValue');
 const { Goal, Activity } = require('../models/');
+const { Op } = require('sequelize');
 
 class GoalController {
   static async findAll(req, res, next) {
@@ -41,7 +42,7 @@ class GoalController {
     }
   }
 
-  static async destroyByPk(req, res, next) {
+  static async destroy(req, res, next) {
     try {
       const goal = req.goal;
       await goal.destroy();
@@ -52,7 +53,7 @@ class GoalController {
     }
   }
 
-  static async updateByPk(req, res, next) {
+  static async update(req, res, next) {
     const { targetValue, startDate, endDate } = req.body;
     try {
       const goal = req.goal;
@@ -60,6 +61,7 @@ class GoalController {
       goal.startDate = startDate !== undefined ? startDate : goal.startDate;
       goal.endDate = endDate !== undefined ? endDate : goal.endDate;
       goal.currentValue = await calculateCurrentValue(goal);
+      goal.isAchieved = goal.currentValue >= goal.targetValue;
       await goal.save();
       res.json(goal);
     } catch (error) {
