@@ -1,5 +1,5 @@
 // Function to calculate calories burned
-function calculateCalories(activity, duration) {
+function calculateCalories(typeName, duration) {
   // MET values for activities (average values)
   const MET_VALUES = {
     running: 9.8, // Running at 6 mph (approximately 9.65 km/h)
@@ -16,7 +16,7 @@ function calculateCalories(activity, duration) {
   const durationInHours = duration / 60;
 
   // Calculate calories burned (MET * weight in kg * duration in hours)
-  const caloriesBurned = MET_VALUES[activity] * weightInKg * durationInHours;
+  const caloriesBurned = MET_VALUES[typeName] * weightInKg * durationInHours;
 
   return Math.round(caloriesBurned);
 }
