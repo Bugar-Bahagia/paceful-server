@@ -7,7 +7,7 @@ module.exports = async function guardGoal(req, res, next) {
     return next({ name: 'NotAuthorized', message: 'User not authenticated' });
   }
 
-  const id = req.user.id;
+  const id = req.params.id;
 
   try {
     const goal = await Goal.findByPk(id);
