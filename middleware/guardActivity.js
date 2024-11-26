@@ -4,7 +4,7 @@ module.exports = async function guardActivity(req, res, next) {
   let user = req.user;
 
   if (!user) {
-    return next({ name: 'Unauthorized', message: 'User not authenticated' });
+    throw { name: 'Unauthorized', message: 'User not authenticated' };
   }
 
   const id = req.params.id
