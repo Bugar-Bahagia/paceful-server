@@ -6,6 +6,7 @@ const router = express.Router();
 // base url => /activities
 router.get('/', ActivityController.findAll);
 router.post('/', ActivityController.create);
+router.get('/:id', guardActivity, ActivityController.findByPk);
 router.put('/:id', guardActivity, ActivityController.update);
 router.delete('/:id', guardActivity, ActivityController.destroy);
 
