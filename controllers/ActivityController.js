@@ -52,7 +52,7 @@ class ActivityController {
         let updatedValue = goal.currentValue;
         switch (goal.typeName) {
           case 'steps':
-            if (newActivity.typeName === 'running' || newActivity.typeName === 'walking') {
+            if (newActivity.typeName === 'running' || newActivity.typeName === 'walking' || newActivity.typeName === 'hiking') {
               const steps = Math.round(newActivity.distance * 1.3123);
               updatedValue += steps;
             }
@@ -114,7 +114,7 @@ class ActivityController {
         let updatedValue = goal.currentValue;
         switch (goal.typeName) {
           case 'steps':
-            if (activity.typeName === 'running' || activity.typeName === 'walking') {
+            if (activity.typeName === 'running' || activity.typeName === 'walking' || activity.typeName === 'hiking') {
               const oldSteps = Math.round(oldDistance * 1.3123);
               const newSteps = Math.round(activity.distance * 1.3123);
               updatedValue = updatedValue - oldSteps + newSteps;
@@ -165,7 +165,7 @@ class ActivityController {
         let updatedValue = goal.currentValue;
         switch (goal.typeName) {
           case 'steps':
-            if (activity.typeName === 'running' || activity.typeName === 'walking') {
+            if (activity.typeName === 'running' || activity.typeName === 'walking' || activity.typeName === 'hiking') {
               const oldSteps = Math.round(oldDistance * 1.3123);
               updatedValue -= oldSteps;
             }
