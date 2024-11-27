@@ -1,15 +1,22 @@
 const calculateCalories = require('../helpers/calculateCalories');
 const { Op } = require('sequelize');
 const { Activity, Goal, sequelize } = require('../models/');
+const redis = require('../config/redis');
 
 class ActivityController {
   static async findAll(req, res, next) {
     try {
+      const result = await redis.get(`activities:${req.user.id}`);
+      if (result) {
+        return res.json(JSON.parse(result));
+      }
+
       const activities = await Activity.findAll({
         where: {
           UserId: req.user.id,
         },
       });
+      await redis.set(`activities:${req.user.id}`, JSON.stringify(activities));
       res.json(activities);
     } catch (error) {
       console.log(error);
@@ -64,6 +71,8 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
+      await redis.del(`activities:${req.user.id}`);
+      await redis.del(`goals:${req.user.id}`);
       res.status(201).json(newActivity);
     } catch (error) {
       console.log(error);
@@ -125,6 +134,8 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
+      await redis.del(`goals:${req.user.id}`);
+      await redis.del(`activities:${req.user.id}`);
       res.json(activity);
     } catch (error) {
       console.log(error);
@@ -176,6 +187,8 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
+      await redis.del(`goals:${req.user.id}`);
+      await redis.del(`activities:${req.user.id}`);
       res.json({ message: 'Activity deleted successfully' });
     } catch (error) {
       console.log(error);
