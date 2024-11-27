@@ -1,3 +1,4 @@
+const redis = require('../config/redis');
 const calculateCurrentValue = require('../helpers/calculateCurrentValue');
 const { Goal, Activity } = require('../models/');
 const { Op } = require('sequelize');
@@ -5,11 +6,16 @@ const { Op } = require('sequelize');
 class GoalController {
   static async findAll(req, res, next) {
     try {
+      const result = await redis.get(`goals:${req.user.id}`);
+      if (result) {
+        return res.json(JSON.parse(result));
+      }
       const goals = await Goal.findAll({
         where: {
           UserId: req.user.id,
         },
       });
+      await redis.set(`goals:${req.user.id}`, JSON.stringify(goals));
       res.json(goals);
     } catch (error) {
       console.log(error);
@@ -46,6 +52,7 @@ class GoalController {
     try {
       const goal = req.goal;
       await goal.destroy();
+      await redis.del(`goals:${req.user.id}`);
       res.json({ message: 'Goal deleted successfully' });
     } catch (error) {
       console.log(error);
@@ -63,6 +70,7 @@ class GoalController {
       goal.currentValue = await calculateCurrentValue(goal);
       goal.isAchieved = goal.currentValue >= goal.targetValue;
       await goal.save();
+      await redis.del(`goals:${req.user.id}`);
       res.json(goal);
     } catch (error) {
       console.log(error);
@@ -95,6 +103,7 @@ class GoalController {
         }
       });
       const newGoal = await Goal.create({ UserId: req.user.id, typeName, targetValue, currentValue, startDate, endDate, isAchieved: currentValue >= targetValue });
+      await redis.del(`goals:${req.user.id}`);
       res.status(201).json(newGoal);
     } catch (error) {
       console.log(error);
