@@ -86,7 +86,7 @@ class GoalController {
       activities.forEach((activity) => {
         switch (typeName) {
           case 'steps':
-            if (activity.typeName === 'running' || activity.typeName === 'walking') {
+            if (activity.typeName === 'running' || activity.typeName === 'walking' || activity.typeName === 'hiking') {
               const steps = Math.round(activity.distance * 1.3123);
               currentValue += steps;
             }
