@@ -4,6 +4,8 @@ const request = require('supertest');
 const { queryInterface } = sequelize;
 const { signToken } = require('../helpers/jwt');
 const calculateCalories = require('../helpers/calculateCalories.js');
+const redis = require('../config/redis.js');
+const deleteAllRedis = require('../helpers/deleteAllRedis.js');
 
 const userData = {
   email: 'fathan@mail.com',
@@ -12,7 +14,7 @@ const userData = {
   dateOfBirth: '1999-11-27T03:10:39.262Z',
 };
 
-let userToken1, activity1Id, activity2Id, goal1Id, goal2Id;
+let userToken1, activity1Id, activity2Id, goal1Id;
 
 const walkingActivity = { typeName: 'walking', duration: 30, distance: 500, notes: 'morning walk in jakarta', activityDate: '2024-11-27T03:10:39.262Z' };
 
@@ -52,6 +54,10 @@ afterAll((done) => {
       return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
     })
     .then(() => {
+      return deleteAllRedis();
+    })
+    .then(() => {
+      redis.disconnect();
       done();
     })
     .catch((err) => done(err));
@@ -91,6 +97,7 @@ describe('GET /goals/:id should have dynamic currentValue ', () => {
       .then((response) => {
         const { body, status } = response;
         const caloriesBurned = calculateCalories(walkingActivity.typeName, walkingActivity.duration);
+
         activity1Id = body.id;
         expect(status).toBe(201);
         expect(body).toHaveProperty('id', activity1Id);
@@ -139,6 +146,7 @@ describe('GET /goals/:id should have dynamic currentValue ', () => {
       .then((response) => {
         const { body, status } = response;
         const caloriesBurned = calculateCalories(swimmingActivity.typeName, swimmingActivity.duration);
+
         activity2Id = body.id;
         expect(status).toBe(201);
         expect(body).toHaveProperty('id', activity2Id);
@@ -275,7 +283,6 @@ describe('GET /goals/:id should have dynamic currentValue ', () => {
       .then((response) => {
         const { body, status } = response;
 
-        goal2Id = body.id;
         expect(status).toBe(201);
         expect(body).toHaveProperty('id', expect.any(Number));
         expect(body).toHaveProperty('UserId', 1);
@@ -300,7 +307,6 @@ describe('GET /goals/:id should have dynamic currentValue ', () => {
       .then((response) => {
         const { body, status } = response;
 
-        goal2Id = body.id;
         expect(status).toBe(201);
         expect(body).toHaveProperty('id', expect.any(Number));
         expect(body).toHaveProperty('UserId', 1);
