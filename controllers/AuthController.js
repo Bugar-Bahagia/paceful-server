@@ -39,7 +39,7 @@ module.exports = class AuthController {
         data: result,
       });
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       next(error);
     }
   }
@@ -60,7 +60,7 @@ module.exports = class AuthController {
         where: { email },
       });
 
-      console.log(user);
+      // console.log(user);
 
       if (!user) {
         throw { name: 'Unauthorized', message: 'Invalid email or password' };
@@ -76,7 +76,7 @@ module.exports = class AuthController {
 
       res.status(200).json({ access_token });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       next(error);
     }
   }
@@ -84,6 +84,9 @@ module.exports = class AuthController {
 
   static async googleLogin(req, res, next) {
     const token = req.headers.authorization?.split(" ")[1]
+
+    // console.log(req.headers.authorization);
+    
     if (!token) {
       return res.status(400).json({ message: "Token is required" })
     }
@@ -128,9 +131,9 @@ module.exports = class AuthController {
       
       const access_token = signToken({ id: user.id, email: user.email })
       return res.status(200).json({ access_token })
-    } catch (err) {
-      console.log(err)
-      next(err)
+    } catch (error) {
+      // console.log(err)
+      next(error)
     }
   }
 
