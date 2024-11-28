@@ -3,6 +3,8 @@ const { User, sequelize } = require('../models');
 const request = require('supertest');
 const { queryInterface } = sequelize;
 const { signToken } = require('../helpers/jwt');
+const redis = require('../config/redis.js');
+const deleteAllRedis = require('../helpers/deleteAllRedis.js');
 
 const userData = {
   email: 'fathan@mail.com',
@@ -56,6 +58,10 @@ afterAll((done) => {
       return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
     })
     .then(() => {
+      return deleteAllRedis();
+    })
+    .then(() => {
+      redis.disconnect();
       done();
     })
     .catch((err) => done(err));
