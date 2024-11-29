@@ -18,7 +18,7 @@ module.exports = async function authentication(req, res, next) {
     const data = verifyToken(token);
     const user = await User.findByPk(data.id);
     if (!user) {
-      throw { name: 'JsonWebTokenError' };
+      throw { name: "NotFound", message: "Profile not found" };
     }
     req.user = user;
 
