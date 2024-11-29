@@ -69,6 +69,11 @@ module.exports = (sequelize, DataTypes) => {
           notNull: {
             msg: 'Activity date cannot be null',
           },
+          isBefore(value) {
+            if (new Date(value) > new Date()) {
+              throw new Error('Activity date must be maximum today');
+            }
+          },
         },
       },
       notes: DataTypes.STRING,
