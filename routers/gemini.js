@@ -3,6 +3,6 @@ const GeminiController = require('../controllers/GeminiController');
 const router = express.Router();
 
 // base url => /gemini
-router.get('/', GeminiController.generatePrompt);
+router.get('/', GeminiController.generateText);
 
 module.exports = router;

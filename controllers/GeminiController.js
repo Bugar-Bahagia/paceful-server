@@ -1,8 +1,8 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class GeminiController {
-  static async generatePrompt(req, res, next) {
-    const { genre } = req.body;
+  static async generateText(req, res, next) {
+    const { genre } = req.query;
     try {
       if (!genre) {
         throw { name: 'BadRequest', message: 'Type of activity is required' };
