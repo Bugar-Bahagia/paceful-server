@@ -1,20 +1,11 @@
 const { UserProfile } = require('../models');
 
 module.exports = async function guardProfile(req, res, next) {
- 
-
   try {
-    let user = req.user;
-
-    if (!user) {
-      throw { name: 'Unauthorized', message: 'User not authenticated' };
-    }
-
     const id = req.user.id;
     const profile = await UserProfile.findOne({
       where: { UserId: id },
     });
-
 
     req.profile = profile;
     return next();
