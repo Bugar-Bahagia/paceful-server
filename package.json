@@ -5,8 +5,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "npx nodemon ./bin/www",
-    "pre:test": "npx sequelize db:drop --env test && npx sequelize db:create --env test && npx sequelize db:migrate --env test",
-    "test": "npm run pre:test && jest --runInBand --detectOpenHandles --forceExit --coverage --verbose"
+    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage --verbose"
   },
   "keywords": [],
   "author": "",
