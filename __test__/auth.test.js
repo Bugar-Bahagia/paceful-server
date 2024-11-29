@@ -5,6 +5,7 @@ const { sequelize } = require('../models');
 const { queryInterface } = sequelize;
 const redis = require('../config/redis.js');
 const deleteAllRedis = require('../helpers/deleteAllRedis.js');
+const { OAuth2Client } = require('google-auth-library');
 
 afterAll((done) => {
   queryInterface
@@ -213,43 +214,120 @@ describe('Trying Login Endpoint auth/login', () => {
   });
 });
 
-describe('Trying Google Login Endpoint /auth/googlelogin', () => {
-  it('success POST /auth/googlelogin', async () => {
-    const mockGoogleToken =
-      'eyJhbGciOiJSUzI1NiIsImtpZCI6IjM2MjgyNTg2MDExMTNlNjU3NmE0NTMzNzM2NWZlOGI4OTczZDE2NzEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTQ2MTM1MjQzMzA4ODU0MjcxNjkiLCJlbWFpbCI6InNoYXFpbGFndW5hd2FuMjBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTczMjc3MTMyNCwibmFtZSI6IlNoYXFpbGEiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jS2ljY2Z4Umozcmw4RkJwQWpIWHZzVlJZR3RPbXRVbGJCbV9MdC11MFBMbzBMZTJnPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IlNoYXFpbGEiLCJpYXQiOjE3MzI3NzE2MjQsImV4cCI6MTczMjc3NTIyNCwianRpIjoiNTU2Mzg5ZjExMDc3MGU1ZGNjMzk0YWYzY2VlYmI3ODlkZmZlMjBhOSJ9.XOsFWBUTpXjQoQwQUeVwFS6fEnYAA69ILDGsNASbJBY4-yPaoqOunSibgWOnGFeazedqGI8OyL0eBgBdQwvaQfPEcX50Swxg14hH3LngQXuWF0xKYoAZGhHYtjKaf1OeJ65r2HAt77PaLwarJc4_kixsNMr_T0ZHDU6k8g64k8v9drjRzoD4aPpyJrMlu-J19CmJaBYKOBQGTQ407F8UNVAGMn1hKcrVJ3y17gsEe4MHszjoCIZ7uYdugpx3Gi-tRfak5nof7GyBMeqpiBRh3M16_LFCNt1zXQI-Fm-IqxTNKehmyFyvD7MUOAXKaMQTq49GMNbzOORguSkbnR_R9Q';
+// describe('Trying Google Login Endpoint /auth/googlelogin', () => {
+//   it('success POST /auth/googlelogin', async () => {
+//     const mockGoogleToken =
+//       'eyJhbGciOiJSUzI1NiIsImtpZCI6IjM2MjgyNTg2MDExMTNlNjU3NmE0NTMzNzM2NWZlOGI4OTczZDE2NzEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTQ2MTM1MjQzMzA4ODU0MjcxNjkiLCJlbWFpbCI6InNoYXFpbGFndW5hd2FuMjBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTczMjg0NjYwNiwibmFtZSI6IlNoYXFpbGEiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jS2ljY2Z4Umozcmw4RkJwQWpIWHZzVlJZR3RPbXRVbGJCbV9MdC11MFBMbzBMZTJnPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IlNoYXFpbGEiLCJpYXQiOjE3MzI4NDY5MDYsImV4cCI6MTczMjg1MDUwNiwianRpIjoiN2Q4M2FiYzAzZGViOWQ4ODg2MjFkM2RmOTg4NDJlZmFhNDgyOWE3NCJ9.TY3CtueUQvkCSFk7grkp_8d7JXa1iqBVKfhgFmWkbhqA_ODt3e9cBv2Zc_Gis9mOhzHAIRZ3QUkPvZHxfW22_2wK_Ih0It61t3JeKAbV1HPkH3oGwQls7BWmCfZxU6faFam6cWlFejL1u-xnW594HLBO_w0D5DJHE3pbBcBt3TrNMotp6eXZAAPqat92_s4KzqNW2mafH_pu9miUz4VMKaCGI8JcKNTjAzJjs9gCjgzNByvKegcMcsU6ERpn39ylXbBMR2D8hYsTlrc32qb6VLuvmX5prLfQVmeYZl9xEs2CZhQTvbXpzCIoWCF8OngTRlhn6jdJVgXi18l8qvgNng';
 
-    const response = await request(app).post('/auth/googlelogin').set('authorization', `Bearer ${mockGoogleToken}`).expect(200);
+//     const response = await request(app).post('/auth/googlelogin').set('authorization', `Bearer ${mockGoogleToken}`).expect(200);
+
+//     expect(response.body).toHaveProperty('access_token');
+//     expect(typeof response.body.access_token).toBe('string');
+//   });
+
+//   it("failed POST /auth/googlelogin because there's no idToken", async () => {
+//     const mockGoogleToken = '';
+
+//     const response = await request(app)
+//       .post('/auth/googlelogin')
+//       .set('token', mockGoogleToken)
+//       .expect({
+//         message: 'Token is required',
+//       })
+//       .expect(400);
+//   });
+
+//   // it('failed POST /auth/googlelogin with invalid idToken', async () => {
+//   //   const invalidGoogleToken = 'invalid-token';
+
+//   //   const response = await request(app)
+//   //     .post('/auth/googlelogin')
+//   //     .set("authorization", `Bearer ${invalidGoogleToken}`)
+//   //     .expect({
+//   //       message: 'Invalid Google token payload',
+//   //     }).expect(401)
+//   //     // .expect(401);
+
+//   //   // expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
+//   // });
+// });
+
+jest.mock('google-auth-library'); 
+
+describe('Trying Google Login Endpoint /auth/googlelogin', () => {
+  const mockVerifyIdToken = jest.fn();
+
+  beforeAll(() => {
+    
+    OAuth2Client.mockImplementation(() => {
+      return {
+        verifyIdToken: mockVerifyIdToken,
+      };
+    });
+  });
+
+  it('failed POST /auth/googlelogin because Google payload does not include email', async () => {
+    
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        name: 'Qila', 
+      }),
+    });
+
+    const mockGoogleToken = 'mock-google-token';
+
+    const response = await request(app)
+      .post('/auth/googlelogin')
+      .set('Authorization', `Bearer ${mockGoogleToken}`)
+      .expect(400);
+
+    expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
+  });
+
+  it('failed POST /auth/googlelogin because Google payload does not include name', async () => {
+    
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        email: 'qila@mail.com', 
+      }),
+    });
+
+    const mockGoogleToken = 'mock-google-token';
+
+    const response = await request(app)
+      .post('/auth/googlelogin')
+      .set('Authorization', `Bearer ${mockGoogleToken}`)
+      .expect(400);
+
+    expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
+  });
+
+  it('failed POST /auth/googlelogin because there is no idToken', async () => {
+    const response = await request(app)
+      .post('/auth/googlelogin')
+      .set('Authorization', '')
+      .expect(400);
+
+    expect(response.body).toHaveProperty('message', 'Token is required');
+  });
+
+  it('success POST /auth/googlelogin', async () => {
+   
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        email: 'qila@mail.com',
+        name: 'qila',
+      }),
+    });
+
+    const mockGoogleToken = 'mock-google-token';
+
+    const response = await request(app)
+      .post('/auth/googlelogin')
+      .set('Authorization', `Bearer ${mockGoogleToken}`)
+      .expect(200);
 
     expect(response.body).toHaveProperty('access_token');
     expect(typeof response.body.access_token).toBe('string');
   });
-
-  it("failed POST /auth/googlelogin because there's no idToken", async () => {
-    const mockGoogleToken = '';
-
-    const response = await request(app)
-      .post('/auth/googlelogin')
-      .set('token', mockGoogleToken)
-      .expect({
-        message: 'Token is required',
-      })
-      .expect(400);
-    // .expect(400);
-
-    // expect(response.body).toHaveProperty('message', 'Token is required');
-  });
-
-  // it('failed POST /auth/googlelogin with invalid idToken', async () => {
-  //   const invalidGoogleToken = 'invalid-token';
-
-  //   const response = await request(app)
-  //     .post('/auth/googlelogin')
-  //     .set("authorization", `Bearer ${invalidGoogleToken}`)
-  //     .expect({
-  //       message: 'Invalid Google token payload',
-  //     }).expect(401)
-  //     // .expect(401);
-
-  //   // expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
-  // });
 });
