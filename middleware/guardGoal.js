@@ -6,9 +6,6 @@ module.exports = async function guardGoal(req, res, next) {
   try {
     let user = req.user;
 
-    if (!user) {
-      throw { name: 'Unauthorized', message: 'User not authenticated' };
-    }
     const goal = await Goal.findByPk(id);
 
     if (!goal) {

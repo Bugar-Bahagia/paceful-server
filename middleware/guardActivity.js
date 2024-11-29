@@ -6,9 +6,6 @@ module.exports = async function guardActivity(req, res, next) {
   try {
     let user = req.user;
 
-    if (!user) {
-      throw { name: 'Unauthorized', message: 'User not authenticated' };
-    }
     const activity = await Activity.findByPk(id);
 
     if (!activity) {

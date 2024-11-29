@@ -1,5 +1,5 @@
 const calculateCalories = require('../helpers/calculateCalories');
-const { Activity, Goal, sequelize } = require('../models');
+const { Activity, Goal, sequelize } = require('../models/');
 const redis = require('../config/redis');
 const ActivityController = require('../controllers/ActivityController');
 
@@ -30,7 +30,17 @@ describe('ActivityController', () => {
     req = {
       user: { id: 1 },
       body: { typeName: 'running', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01' },
-      activity: { id: 1, UserId: 1, typeName: 'running', duration: 30, distance: 5, caloriesBurned: 100, activityDate: '2024-01-01', save: jest.fn(), destroy: jest.fn },
+      activity: {
+        id: 1,
+        UserId: 1,
+        typeName: 'running',
+        duration: 30,
+        distance: 5,
+        caloriesBurned: 100,
+        activityDate: '2024-01-01',
+        save: jest.fn(),
+        destroy: jest.fn(),
+      },
     };
     res = {
       json: jest.fn(),
@@ -61,6 +71,13 @@ describe('ActivityController', () => {
       expect(redis.set).toHaveBeenCalledWith('activities:1', JSON.stringify([{ id: 1, typeName: 'running' }]));
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'running' }]);
     });
+
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Database error');
+      Activity.findAll.mockRejectedValue(error);
+      await ActivityController.findAll(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
   });
 
   describe('findByPk', () => {
@@ -85,6 +102,17 @@ describe('ActivityController', () => {
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
+    it('should handle missing fields gracefully', async () => {
+      req.body = {}; // Simulating missing fields
+      calculateCalories.mockReturnValue(0);
+      Activity.create.mockResolvedValue(req.activity);
+      await ActivityController.create(req, res, next);
+      expect(Activity.create).toHaveBeenCalledWith(expect.any(Object), { transaction });
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
     it('should rollback the transaction on error', async () => {
       calculateCalories.mockReturnValue(100);
       Activity.create.mockRejectedValue(new Error('Error creating activity'));
@@ -98,19 +126,43 @@ describe('ActivityController', () => {
     it('should update an activity and related goals', async () => {
       calculateCalories.mockReturnValue(120);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'steps', targetValue: 10000 }]);
+
       await ActivityController.update(req, res, next);
+
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
       expect(transaction.commit).toHaveBeenCalled();
       expect(redis.del).toHaveBeenCalledWith('goals:1');
       expect(redis.del).toHaveBeenCalledWith('activities:1');
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
+
+    it('should handle no changes gracefully', async () => {
+      req.body = {}; // Simulating no changes
+      await ActivityController.update(req, res, next);
+      expect(req.activity.save).toHaveBeenCalledWith({ transaction });
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
     it('should rollback the transaction on error', async () => {
       calculateCalories.mockReturnValue(120);
       req.activity.save.mockRejectedValue(new Error('Error updating activity'));
+
       await ActivityController.update(req, res, next);
+
       expect(transaction.rollback).toHaveBeenCalled();
       expect(next).toHaveBeenCalledWith(new Error('Error updating activity'));
+    });
+  });
+
+  describe('destroy', () => {
+    it('should rollback the transaction on error', async () => {
+      req.activity.destroy.mockRejectedValue(new Error('Error deleting activity'));
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(transaction.rollback).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(new Error('Error deleting activity'));
     });
   });
 });
