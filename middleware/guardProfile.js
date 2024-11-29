@@ -7,6 +7,10 @@ module.exports = async function guardProfile(req, res, next) {
       where: { UserId: id },
     });
 
+    if (!profile) {
+      throw { name: 'NotFound', message: 'Profile not found' };
+    }
+
     req.profile = profile;
     return next();
 
