@@ -3,14 +3,21 @@
 module.exports = class UsersController {
   static async updateProfile(req, res, next) {
     try {
-      const { name, dateOfBirth } = req.body;
+      const { name, dateOfBirth, email } = req.body;
       const profile = req.profile;
+      const user = req.user
       await profile.update({
         name,
         dateOfBirth,
       });
 
-      res.status(200).json({ message: 'Your Profile has been updated', data: profile });
+      await user.update({
+        email
+      })
+
+      const emailuser = user.email
+
+      res.status(200).json({ message: 'Your Profile has been updated', data: profile, emailuser });
     } catch (error) {
       console.error(error);
       next(error);
@@ -20,7 +27,10 @@ module.exports = class UsersController {
   static async getProfile(req, res, next) {
     try {
       const profile = req.profile;
-      res.status(200).json({ data: profile });
+      const user = req.user
+      const email = user.email
+     
+      res.status(200).json({ data: profile, email});
     } catch (error) {
       console.error(error);
       next(error);
