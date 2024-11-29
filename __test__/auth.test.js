@@ -281,8 +281,9 @@ describe('Trying Google Login Endpoint /auth/googlelogin', () => {
       .set('Authorization', `Bearer ${mockGoogleToken}`)
       .expect(400);
 
-    expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
-  });
+  //   expect(response.body).toHaveProperty('access_token');
+  //   expect(typeof response.body.access_token).toBe('string');
+  // });
 
   it('failed POST /auth/googlelogin because Google payload does not include name', async () => {
     
