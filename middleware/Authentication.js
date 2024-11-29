@@ -10,7 +10,7 @@ module.exports = async function authentication(req, res, next) {
     }
 
     const [, token] = bearerToken.split(' ');
-    console.log({ token }, 'ini token');
+    // console.log({ token }, 'ini token');
 
     if (!token) {
       throw { name: 'JsonWebTokenError' };
