@@ -124,6 +124,24 @@ describe('POST /activities', () => {
         done(err);
       });
   });
+
+  test('400 add activity invalid date', (done) => {
+    dataActivity.activityDate = '2025-12-01 11:01:43.066 +0700';
+    request(app)
+      .post('/activities')
+      .send(dataActivity)
+      .set('Authorization', `Bearer ${userToken1}`)
+      .then((response) => {
+        const { body, status } = response;
+        expect(status).toBe(400);
+
+        expect(body).toHaveProperty('message', 'Activity date must be maximum today');
+        done();
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
 });
 
 describe('GET /activities', () => {
