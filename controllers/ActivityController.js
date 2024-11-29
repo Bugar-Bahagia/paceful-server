@@ -15,6 +15,7 @@ class ActivityController {
         where: {
           UserId: req.user.id,
         },
+        order: [['updatedAt', 'DESC']],
       });
       await redis.set(`activities:${req.user.id}`, JSON.stringify(activities));
       res.json(activities);
