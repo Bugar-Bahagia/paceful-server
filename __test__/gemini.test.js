@@ -27,7 +27,7 @@ describe('GeminiController', () => {
   let req, res, next;
 
   beforeEach(() => {
-    req = { body: { genre: 'yoga' } };
+    req = { query: { genre: 'yoga' } };
     res = {
       json: jest.fn(),
       status: jest.fn().mockReturnThis(),
@@ -40,14 +40,14 @@ describe('GeminiController', () => {
   });
 
   it('should return a generated prompt when genre is provided', async () => {
-    await GeminiController.generatePrompt(req, res, next);
+    await GeminiController.generateText(req, res, next);
     expect(GoogleGenerativeAI).toHaveBeenCalledWith(process.env.GEMINI_KEY);
     expect(res.json).toHaveBeenCalledWith({ result: '1. Sample response text' });
   });
 
   it('should handle missing genre error', async () => {
-    req.body.genre = null;
-    await GeminiController.generatePrompt(req, res, next);
+    req.query.genre = null;
+    await GeminiController.generateText(req, res, next);
     expect(next).toHaveBeenCalledWith({ name: 'BadRequest', message: 'Type of activity is required' });
   });
 
@@ -60,7 +60,7 @@ describe('GeminiController', () => {
         }),
       };
     });
-    await GeminiController.generatePrompt(req, res, next);
+    await GeminiController.generateText(req, res, next);
     expect(next).toHaveBeenCalledWith(error);
   });
 });
