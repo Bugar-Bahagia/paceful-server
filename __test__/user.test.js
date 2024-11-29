@@ -68,10 +68,19 @@ describe("User Endpoints /users/profile", () => {
     expect(typeof response.body.data).toBe("object");
   });
 
-  it("failed GET users/profile because token is invalid", async () => {
+  it("failed GET users/profile because user not found", async () => {
     const response = await request(app)
       .get("/users/profile")
       .set("authorization", `Bearer ${invalidToken}`)
+      .expect(404);
+
+      expect(response.body).toHaveProperty("message", "Profile not found");
+  });
+
+  it("failed GET users/profile because token is not Bearer", async () => {
+    const response = await request(app)
+      .get("/users/profile")
+      .set("authorization", `${token}`)
       .expect(401);
 
       expect(response.body).toHaveProperty("message", "Invalid token");
@@ -113,6 +122,19 @@ describe("User Endpoints /users/profile", () => {
       expect(response.body).toHaveProperty("message", "Invalid token")
   });
 
+  it("failed updates the user's profile because token is not Bearer", async () => {
+    const response = await request(app)
+      .put("/users/profile")
+      .set("authorization", `${token}`)
+      .send({
+        name: "Updated Name",
+        dateOfBirth: "1990-01-01",
+      })
+      .expect(401);
+
+      expect(response.body).toHaveProperty("message", "Invalid token")
+  });
+
 
   it("failed updates the user's profile because user's name is empty", async () => {
     const response = await request(app)
@@ -140,7 +162,7 @@ describe("User Endpoints /users/profile", () => {
       expect(response.body).toHaveProperty("message", "Date of birth cannot be empty")
   });
 
-  it("failed updates the user's profile because token is invalid", async () => {
+  it("failed updates the user's profile because profile is not found", async () => {
     const response = await request(app)
       .put("/users/profile")
       .set("authorization", `Bearer ${invalidToken}`)
@@ -148,9 +170,9 @@ describe("User Endpoints /users/profile", () => {
         name: "Updated Name",
         dateOfBirth: "1990-01-01",
       })
-      .expect(401);
+      .expect(404);
 
-      expect(response.body).toHaveProperty("message", "Invalid token")
+      expect(response.body).toHaveProperty("message", "Profile not found")
   });
 
   it("successfully deletes the user's account", async () => {
@@ -174,12 +196,75 @@ describe("User Endpoints /users/profile", () => {
     expect(response.body).toHaveProperty( "message", "Invalid token");
   });
 
-  it("failed to delete the user's account because token is invalid", async () => {
+  it("failed to delete the user's account because token is not Bearer", async () => {
     const response = await request(app)
       .delete("/users/profile")
-      .set("authorization", `Bearer ${invalidToken}`)
+      .set("authorization", `${token}`)
       .expect(401);
 
     expect(response.body).toHaveProperty( "message", "Invalid token");
   });
+
+  it("failed to delete the user's account because profile is not found", async () => {
+    const response = await request(app)
+      .delete("/users/profile")
+      .set("authorization", `Bearer ${invalidToken}`)
+      .expect(404);
+
+    expect(response.body).toHaveProperty( "message", "Profile not found");
+  });
 });
+
+// describe("Additional User Endpoints /users/profile", () => {
+//   it("fails to update the profile with invalid date of birth format", async () => {
+//     const response = await request(app)
+//       .put("/users/profile")
+//       .set("authorization", `Bearer ${token}`)
+//       .send({
+//         name: "Updated Name",
+//         dateOfBirth: "invalid-date",
+//       })
+//       .expect(400);
+
+//     expect(response.body).toHaveProperty("message", "Invalid date format");
+//   });
+
+//   it("fails to get the profile if the user profile is not found", async () => {
+//     const response = await request(app)
+//       .get("/users/profile")
+//       .set("authorization", `Bearer ${token}`)
+//       .expect(404);
+
+//     expect(response.body).toHaveProperty("message", "Profile not found");
+//   });
+
+//   it("handles errors gracefully in update profile", async () => {
+//     jest.spyOn(UserProfile.prototype, 'update').mockImplementation(() => {
+//       throw new Error('Update failed');
+//     });
+
+//     const response = await request(app)
+//       .put("/users/profile")
+//       .set("authorization", `Bearer ${token}`)
+//       .send({
+//         name: "Updated Name",
+//         dateOfBirth: "1990-01-01",
+//       })
+//       .expect(500);
+
+//     expect(response.body).toHaveProperty("message", "Internal server error");
+//   });
+
+//   it("handles errors gracefully in get profile", async () => {
+//     jest.spyOn(UserProfile, 'findOne').mockImplementation(() => {
+//       throw new Error('Fetch failed');
+//     });
+
+//     const response = await request(app)
+//       .get("/users/profile")
+//       .set("authorization", `Bearer ${token}`)
+//       .expect(500);
+
+//     expect(response.body).toHaveProperty("message", "Internal server error");
+//   });
+// });
