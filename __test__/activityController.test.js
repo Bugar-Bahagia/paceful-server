@@ -88,13 +88,14 @@ describe('ActivityController', () => {
   });
 
   describe('create', () => {
-    it('should create a new activity and update related goals', async () => {
+    it('should create a new activity and update related goals for steps', async () => {
+      req.body.typeName = 'steps';
       calculateCalories.mockReturnValue(100);
       Activity.create.mockResolvedValue(req.activity);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'steps', targetValue: 10000 }]);
       await ActivityController.create(req, res, next);
-      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'running', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
-      expect(Goal.update).toHaveBeenCalledWith({ currentValue: 7, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
+      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'steps', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
+      expect(Goal.update).toHaveBeenCalledWith({ currentValue: Math.round(5 * 1.3123), isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
       expect(redis.del).toHaveBeenCalledWith('activities:1');
       expect(redis.del).toHaveBeenCalledWith('goals:1');
@@ -102,13 +103,47 @@ describe('ActivityController', () => {
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
-    it('should handle missing fields gracefully', async () => {
-      req.body = {}; // Simulating missing fields
-      calculateCalories.mockReturnValue(0);
+    it('should create a new activity and update related goals for distance', async () => {
+      req.body.typeName = 'distance';
+      calculateCalories.mockReturnValue(100);
       Activity.create.mockResolvedValue(req.activity);
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'distance', targetValue: 10000 }]);
       await ActivityController.create(req, res, next);
-      expect(Activity.create).toHaveBeenCalledWith(expect.any(Object), { transaction });
+      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'distance', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
+      expect(Goal.update).toHaveBeenCalledWith({ currentValue: 5, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should create a new activity and update related goals for calories burned', async () => {
+      req.body.typeName = 'calories burned';
+      calculateCalories.mockReturnValue(100);
+      Activity.create.mockResolvedValue(req.activity);
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'calories burned', targetValue: 10000 }]);
+      await ActivityController.create(req, res, next);
+      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'calories burned', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
+      expect(Goal.update).toHaveBeenCalledWith({ currentValue: 100, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should create a new activity and update related goals for duration (default case)', async () => {
+      req.body.typeName = 'duration';
+      calculateCalories.mockReturnValue(100);
+      Activity.create.mockResolvedValue(req.activity);
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'duration', targetValue: 10000 }]);
+      await ActivityController.create(req, res, next);
+      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'duration', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
+      expect(Goal.update).toHaveBeenCalledWith({ currentValue: 30, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });

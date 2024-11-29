@@ -65,6 +65,13 @@ describe('GoalController', () => {
       expect(redis.set).toHaveBeenCalledWith('goals:1', JSON.stringify([{ id: 1, typeName: 'steps' }]));
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'steps' }]);
     });
+
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Database error');
+      Goal.findAll.mockRejectedValue(error);
+      await GoalController.findAll(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
   });
 
   describe('findAchieved', () => {
@@ -73,6 +80,13 @@ describe('GoalController', () => {
       await GoalController.findAchieved(req, res, next);
       expect(Goal.findAll).toHaveBeenCalledWith({ where: { UserId: 1, isAchieved: true } });
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'steps', isAchieved: true }]);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Database error');
+      Goal.findAll.mockRejectedValue(error);
+      await GoalController.findAchieved(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 
