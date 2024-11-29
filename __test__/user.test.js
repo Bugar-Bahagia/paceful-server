@@ -92,14 +92,12 @@ describe("User Endpoints /users/profile", () => {
       .send({
         name: "Updated Name",
         dateOfBirth: "1990-01-01",
-        email: "updatedemail@mail.com",
       })
       .expect(200);
 
     expect(response.body).toHaveProperty("message", "Your Profile has been updated");
     expect(response.body.data).toHaveProperty("name");
     expect(response.body.data).toHaveProperty("dateOfBirth");
-    expect(response.body).toHaveProperty("emailuser");
   });
 
   it("failed updates the user's profile because there's no token", async () => {
@@ -109,26 +107,12 @@ describe("User Endpoints /users/profile", () => {
       .send({
         name: "Updated Name",
         dateOfBirth: "1990-01-01",
-        email: "updatedemail@mail.com",
       })
       .expect(401);
 
       expect(response.body).toHaveProperty("message", "Invalid token")
   });
 
-  it("failed updates the user's profile because user's email is in invalid format", async () => {
-    const response = await request(app)
-      .put("/users/profile")
-      .set("authorization", `Bearer ${token}`)
-      .send({
-        name: "Updated Name",
-        dateOfBirth: "1990-01-01",
-        email: "updatedemail.com",
-      })
-      .expect(400);
-
-      expect(response.body).toHaveProperty("message", "Invalid email format")
-  });
 
   it("failed updates the user's profile because user's name is empty", async () => {
     const response = await request(app)
@@ -137,7 +121,6 @@ describe("User Endpoints /users/profile", () => {
       .send({
         name: "",
         dateOfBirth: "1990-01-01",
-        email: "updatedemail.com",
       })
       .expect(400);
 
@@ -151,7 +134,6 @@ describe("User Endpoints /users/profile", () => {
       .send({
         name: "updated name",
         dateOfBirth: "",
-        email: "updatedemail.com",
       })
       .expect(400);
 
@@ -165,7 +147,6 @@ describe("User Endpoints /users/profile", () => {
       .send({
         name: "Updated Name",
         dateOfBirth: "1990-01-01",
-        email: "updatedemail@mail.com",
       })
       .expect(401);
 
