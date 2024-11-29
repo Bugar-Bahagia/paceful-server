@@ -11,7 +11,7 @@ jest.mock('@google/generative-ai', () => {
               candidates: [
                 {
                   content: {
-                    parts: [{ text: 'Sample response text' }],
+                    parts: [{ text: `Sample response text` }],
                   },
                 },
               ],
@@ -42,7 +42,7 @@ describe('GeminiController', () => {
   it('should return a generated prompt when genre is provided', async () => {
     await GeminiController.generatePrompt(req, res, next);
     expect(GoogleGenerativeAI).toHaveBeenCalledWith(process.env.GEMINI_KEY);
-    expect(res.json).toHaveBeenCalledWith({ result: 'Sample response text' });
+    expect(res.json).toHaveBeenCalledWith({ result: '1. Sample response text' });
   });
 
   it('should handle missing genre error', async () => {

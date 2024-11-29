@@ -3,7 +3,7 @@
 module.exports = class UsersController {
   static async updateProfile(req, res, next) {
     try {
-      const { name, dateOfBirth, email } = req.body;
+      const { name, dateOfBirth } = req.body;
       const profile = req.profile;
       const user = req.user
       await profile.update({
@@ -11,13 +11,10 @@ module.exports = class UsersController {
         dateOfBirth,
       });
 
-      await user.update({
-        email
-      })
 
       const emailuser = user.email
 
-      res.status(200).json({ message: 'Your Profile has been updated', data: profile, emailuser });
+      res.status(200).json({ message: 'Your Profile has been updated', data: profile });
     } catch (error) {
       console.error(error);
       next(error);
