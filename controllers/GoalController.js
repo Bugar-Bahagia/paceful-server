@@ -13,8 +13,8 @@ class GoalController {
       const goals = await Goal.findAll({
         where: {
           UserId: req.user.id,
-          order: [['updatedAt', 'DESC']],
         },
+        order: [['updatedAt', 'DESC']],
       });
       await redis.set(`goals:${req.user.id}`, JSON.stringify(goals));
       res.json(goals);
