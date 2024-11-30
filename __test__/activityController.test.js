@@ -158,17 +158,110 @@ describe('ActivityController', () => {
   });
 
   describe('update', () => {
-    it('should update an activity and related goals', async () => {
-      calculateCalories.mockReturnValue(120);
+    it('should update an activity and related goals for steps', async () => {
+      req.activity.typeName = 'running';
+      req.activity.distance = 5; // Old distance
+      req.body.distance = 7; // New distance
+      calculateCalories.mockReturnValue(100); // New calories burned
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'steps', targetValue: 10000 }]);
 
       await ActivityController.update(req, res, next);
 
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: Math.round(0 - Math.round(5 * 1.3123) + Math.round(7 * 1.3123)),
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
       expect(transaction.commit).toHaveBeenCalled();
       expect(redis.del).toHaveBeenCalledWith('goals:1');
       expect(redis.del).toHaveBeenCalledWith('activities:1');
       expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should update an activity and related goals for distance', async () => {
+      req.activity.typeName = 'running';
+      req.activity.distance = 5; // Old distance
+      req.body.distance = 10; // New distance
+      calculateCalories.mockReturnValue(100); // New calories burned
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'distance', targetValue: 10000 }]);
+
+      await ActivityController.update(req, res, next);
+
+      expect(req.activity.save).toHaveBeenCalledWith({ transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: 0 - 5 + 10,
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should update an activity and related goals for calories burned', async () => {
+      req.activity.typeName = 'running';
+      req.activity.caloriesBurned = 20; // Old calories burned
+      req.body.duration = 30; // New duration
+      calculateCalories.mockReturnValue(100); // New calories burned
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'calories burned', targetValue: 10000 }]);
+
+      await ActivityController.update(req, res, next);
+
+      expect(req.activity.save).toHaveBeenCalledWith({ transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: 0 - 20 + 100,
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should update an activity and related goals for duration (default case)', async () => {
+      req.activity.typeName = 'other';
+      req.activity.duration = 30; // Old duration
+      req.body.duration = 60; // New duration
+      calculateCalories.mockReturnValue(100); // New calories burned
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'duration', targetValue: 10000 }]);
+
+      await ActivityController.update(req, res, next);
+
+      expect(req.activity.save).toHaveBeenCalledWith({ transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: 0 - 30 + 60,
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith(req.activity);
+    });
+
+    it('should rollback the transaction on error', async () => {
+      calculateCalories.mockReturnValue(120);
+      req.activity.save.mockRejectedValue(new Error('Error updating activity'));
+
+      await ActivityController.update(req, res, next);
+
+      expect(transaction.rollback).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(new Error('Error updating activity'));
     });
 
     it('should handle no changes gracefully', async () => {
@@ -191,6 +284,108 @@ describe('ActivityController', () => {
   });
 
   describe('destroy', () => {
+    it('should delete an activity and update related goals for steps', async () => {
+      req.activity.typeName = 'running';
+      req.activity.distance = 5; // Old distance
+
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'steps', targetValue: 10000 }]);
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: Math.max(0, 100 - Math.round(5 * 1.3123)),
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
+    });
+
+    it('should delete an activity and update related goals for distance', async () => {
+      req.activity.typeName = 'running';
+      req.activity.distance = 5; // Old distance
+
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'distance', targetValue: 10000 }]);
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: Math.max(0, 100 - 5),
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
+    });
+
+    it('should delete an activity and update related goals for calories burned', async () => {
+      req.activity.typeName = 'running';
+      req.activity.caloriesBurned = 100; // Old calories burned
+
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'calories burned', targetValue: 10000 }]);
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: Math.max(0, 100 - 100),
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
+    });
+
+    it('should delete an activity and update related goals for duration (default case)', async () => {
+      req.activity.typeName = 'other';
+      req.activity.duration = 30; // Old duration
+
+      Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'duration', targetValue: 10000 }]);
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
+      expect(Goal.update).toHaveBeenCalledWith(
+        {
+          currentValue: Math.max(0, 100 - 30),
+          isAchieved: false,
+          updatedAt: expect.any(Date),
+        },
+        { where: { id: 1 }, transaction }
+      );
+      expect(transaction.commit).toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
+    });
+
+    it('should rollback the transaction on error', async () => {
+      const error = new Error('Error deleting activity');
+      req.activity.destroy.mockRejectedValue(error);
+
+      await ActivityController.destroy(req, res, next);
+
+      expect(transaction.rollback).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(error);
+    });
+
     it('should rollback the transaction on error', async () => {
       req.activity.destroy.mockRejectedValue(new Error('Error deleting activity'));
 
