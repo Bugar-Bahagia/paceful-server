@@ -9,13 +9,13 @@ class GoalController {
       const page = Number(req.query.page) || 1;
       const limit = 5;
       const offset = (page - 1) * limit;
-
-      const result = await redis.get(`goals:${req.user.id}:page:${page}:limit:${limit}`);
+      const cacheKey = `goals:${req.user.id}:page:${page}:limit:${limit}`;
+      const result = await redis.get(cacheKey);
       if (result) {
         return res.json(JSON.parse(result));
       }
 
-      const goals = await Goal.findAll({
+      const { count, rows } = await Goal.findAndCountAll({
         where: {
           UserId: req.user.id,
         },
@@ -23,8 +23,9 @@ class GoalController {
         offset: offset,
         order: [['updatedAt', 'DESC']],
       });
-      await redis.set(`goals:${req.user.id}:page:${page}:limit:${limit}`, JSON.stringify(goals));
-      res.json(goals);
+      const totalPage = Math.ceil(count / limit);
+      await redis.set(cacheKey, JSON.stringify({ totalGoal: count, totalPage, currPage: page, goals: rows }));
+      res.json({ totalGoal: count, totalPage, currPage: page, goals: rows });
     } catch (error) {
       console.log(error);
       next(error);

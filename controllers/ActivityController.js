@@ -10,12 +10,13 @@ class ActivityController {
       const limit = 5;
       const offset = (page - 1) * limit;
 
-      const result = await redis.get(`activities:${req.user.id}:page:${page}:limit:${limit}`);
+      const cacheKey = `activities:${req.user.id}:page:${page}:limit:${limit}`;
+      const result = await redis.get(cacheKey);
       if (result) {
         return res.json(JSON.parse(result));
       }
 
-      const activities = await Activity.findAll({
+      const { count, rows } = await Activity.findAndCountAll({
         where: {
           UserId: req.user.id,
         },
@@ -23,8 +24,9 @@ class ActivityController {
         offset: offset,
         order: [['updatedAt', 'DESC']],
       });
-      await redis.set(`activities:${req.user.id}:page:${page}:limit:${limit}`, JSON.stringify(activities));
-      res.json(activities);
+      const totalPage = Math.ceil(count / limit);
+      await redis.set(cacheKey, JSON.stringify({ totalActivity: count, totalPage, currPage: page, activities: rows }));
+      res.json({ totalActivity: count, totalPage, currPage: page, activities: rows });
     } catch (error) {
       console.log(error);
       next(error);

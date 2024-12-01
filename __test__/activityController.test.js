@@ -6,7 +6,7 @@ const ActivityController = require('../controllers/ActivityController');
 jest.mock('../helpers/calculateCalories');
 jest.mock('../models/', () => ({
   Activity: {
-    findAll: jest.fn(),
+    findAndCountAll: jest.fn(),
     create: jest.fn(),
   },
   Goal: {
@@ -31,6 +31,7 @@ describe('ActivityController', () => {
   beforeEach(() => {
     req = {
       user: { id: 1 },
+      query: { page: '1', limit: '5' },
       body: { typeName: 'running', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01' },
       activity: {
         id: 1,
@@ -58,29 +59,26 @@ describe('ActivityController', () => {
   });
 
   describe('findAll', () => {
-    beforeEach(() => {
-      req.query = { page: '1', limit: '5' };
-    });
-    it('should return activities from Redis if available', async () => {
-      const cachedActivities = JSON.stringify([{ id: 1, typeName: 'running' }]);
-      redis.get.mockResolvedValue(cachedActivities);
+    it('should return cached activities if available', async () => {
+      const cachedData = JSON.stringify({ totaldata: 10, totalPage: 2, currPage: 1, activities: [{ id: 1, typeName: 'running' }] });
+      redis.get.mockResolvedValue(cachedData);
       await ActivityController.findAll(req, res, next);
       expect(redis.get).toHaveBeenCalledWith('activities:1:page:1:limit:5');
-      expect(res.json).toHaveBeenCalledWith(JSON.parse(cachedActivities));
+      expect(res.json).toHaveBeenCalledWith(JSON.parse(cachedData));
     });
 
     it('should fetch activities from the database if not in Redis', async () => {
       redis.get.mockResolvedValue(null);
-      Activity.findAll.mockResolvedValue([{ id: 1, typeName: 'running' }]);
+      Activity.findAndCountAll.mockResolvedValue({ count: 10, rows: [{ id: 1, typeName: 'running' }] });
       await ActivityController.findAll(req, res, next);
-      expect(Activity.findAll).toHaveBeenCalledWith({ where: { UserId: 1 }, limit: 5, offset: 0, order: [['updatedAt', 'DESC']] });
-      expect(redis.set).toHaveBeenCalledWith('activities:1:page:1:limit:5', JSON.stringify([{ id: 1, typeName: 'running' }]));
-      expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'running' }]);
+      expect(Activity.findAndCountAll).toHaveBeenCalledWith({ where: { UserId: 1 }, limit: 5, offset: 0, order: [['updatedAt', 'DESC']] });
+      expect(redis.set).toHaveBeenCalledWith('activities:1:page:1:limit:5', JSON.stringify({ totalActivity: 10, totalPage: 2, currPage: 1, activities: [{ id: 1, typeName: 'running' }] }));
+      expect(res.json).toHaveBeenCalledWith({ totalActivity: 10, totalPage: 2, currPage: 1, activities: [{ id: 1, typeName: 'running' }] });
     });
 
     it('should handle errors gracefully', async () => {
       const error = new Error('Database error');
-      Activity.findAll.mockRejectedValue(error);
+      redis.get.mockRejectedValue(error);
       await ActivityController.findAll(req, res, next);
       expect(next).toHaveBeenCalledWith(error);
     });
