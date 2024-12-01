@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@dicebear/avatars": "^4.10.8",
+    "@dicebear/avatars-initials-sprites": "^4.10.8",
     "@google/generative-ai": "^0.21.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
