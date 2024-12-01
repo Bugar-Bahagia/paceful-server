@@ -50,11 +50,11 @@ module.exports = (sequelize, DataTypes) => {
           notNull: {
             msg: 'Date of birth cannot be null',
           },
-        }
+        },
       },
       avatar: {
         type: DataTypes.STRING,
-        allowNull: true, 
+        allowNull: true,
       },
     },
     {
@@ -62,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
       modelName: 'UserProfile',
     }
   );
-  
+
   UserProfile.beforeCreate((userProfile) => {
     try {
       if (!userProfile.avatar) {
@@ -71,12 +71,8 @@ module.exports = (sequelize, DataTypes) => {
       }
     } catch (error) {
       console.error('Error generating avatar:', error);
-     
     }
   });
-  
 
   return UserProfile;
-  
 };
-
