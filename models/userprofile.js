@@ -64,12 +64,17 @@ module.exports = (sequelize, DataTypes) => {
   );
   
   UserProfile.beforeCreate((userProfile) => {
-    if (!userProfile.avatar) {
-      const seed = userProfile.name || Math.random().toString(36).substr(2, 5); 
-      const style = 'adventurer-neutral';
-      userProfile.avatar = `https://api.dicebear.com/6.x/${style}/svg?seed=${seed}`; 
+    try {
+      if (!userProfile.avatar) {
+        const seed = userProfile.name || Math.random().toString(36).substr(2, 5);
+        userProfile.avatar = `https://api.dicebear.com/6.x/adventurer-neutral/svg?seed=${encodeURIComponent(seed)}`;
+      }
+    } catch (error) {
+      console.error('Error generating avatar:', error);
+     
     }
   });
+  
 
   return UserProfile;
   

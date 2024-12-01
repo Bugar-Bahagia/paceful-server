@@ -7,26 +7,52 @@ const redis = require('../config/redis.js');
 const deleteAllRedis = require('../helpers/deleteAllRedis.js');
 const { OAuth2Client } = require('google-auth-library');
 
-afterAll((done) => {
-  queryInterface
-    .bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true })
-    .then(() => {
-      return queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return deleteAllRedis();
-    })
-    .then(() => {
-      redis.disconnect();
-      done();
-    })
-    .catch((err) => done(err));
+beforeAll(async () => {
+   
+  await queryInterface.addColumn('UserProfiles', 'avatar', {
+    type: sequelize.Sequelize.STRING,
+    allowNull: true,
+  });
+});
+
+
+// afterAll((done) => {
+//   queryInterface
+//     .removeColumn('UserProfiles', 'avatar');
+//     .bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true })
+//     .then(() => {
+//       return queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return deleteAllRedis();
+//     })
+//     .then(() => {
+//       redis.disconnect();
+//       done();
+//     })
+//     .catch((err) => done(err));
+// });
+
+
+afterAll(async () => {
+  try {
+    await queryInterface.removeColumn('UserProfiles', 'avatar');
+    await queryInterface.bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
+    await deleteAllRedis();
+    redis.disconnect();
+  } catch (error) {
+    console.error('Error during afterAll:', error);
+    throw error;
+  }
 });
 
 describe('Trying Register Endpoint auth/register', () => {
@@ -38,9 +64,10 @@ describe('Trying Register Endpoint auth/register', () => {
         email: 'shaqila@mail.com',
         dateOfBirth: '2000-03-20',
         password: '123456',
+        avatar: null
       })
       .expect(201);
-    expect({ message: 'User registered successfully' });
+    expect({ message: 'User registered successfully'});
   });
 
   it("failed POST /auth/register because there's no name", async () => {
@@ -214,43 +241,6 @@ describe('Trying Login Endpoint auth/login', () => {
   });
 });
 
-// describe('Trying Google Login Endpoint /auth/googlelogin', () => {
-//   it('success POST /auth/googlelogin', async () => {
-//     const mockGoogleToken =
-//       'eyJhbGciOiJSUzI1NiIsImtpZCI6IjM2MjgyNTg2MDExMTNlNjU3NmE0NTMzNzM2NWZlOGI4OTczZDE2NzEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MjMyNjQ1ODk0MDctOWd2NjhxMzVqZ3Q3ZGUwNnNvZjl2MjE1NDVzYmZxN3IuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTQ2MTM1MjQzMzA4ODU0MjcxNjkiLCJlbWFpbCI6InNoYXFpbGFndW5hd2FuMjBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTczMjg0NjYwNiwibmFtZSI6IlNoYXFpbGEiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jS2ljY2Z4Umozcmw4RkJwQWpIWHZzVlJZR3RPbXRVbGJCbV9MdC11MFBMbzBMZTJnPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IlNoYXFpbGEiLCJpYXQiOjE3MzI4NDY5MDYsImV4cCI6MTczMjg1MDUwNiwianRpIjoiN2Q4M2FiYzAzZGViOWQ4ODg2MjFkM2RmOTg4NDJlZmFhNDgyOWE3NCJ9.TY3CtueUQvkCSFk7grkp_8d7JXa1iqBVKfhgFmWkbhqA_ODt3e9cBv2Zc_Gis9mOhzHAIRZ3QUkPvZHxfW22_2wK_Ih0It61t3JeKAbV1HPkH3oGwQls7BWmCfZxU6faFam6cWlFejL1u-xnW594HLBO_w0D5DJHE3pbBcBt3TrNMotp6eXZAAPqat92_s4KzqNW2mafH_pu9miUz4VMKaCGI8JcKNTjAzJjs9gCjgzNByvKegcMcsU6ERpn39ylXbBMR2D8hYsTlrc32qb6VLuvmX5prLfQVmeYZl9xEs2CZhQTvbXpzCIoWCF8OngTRlhn6jdJVgXi18l8qvgNng';
-
-//     const response = await request(app).post('/auth/googlelogin').set('authorization', `Bearer ${mockGoogleToken}`).expect(200);
-
-//     expect(response.body).toHaveProperty('access_token');
-//     expect(typeof response.body.access_token).toBe('string');
-//   });
-
-//   it("failed POST /auth/googlelogin because there's no idToken", async () => {
-//     const mockGoogleToken = '';
-
-//     const response = await request(app)
-//       .post('/auth/googlelogin')
-//       .set('token', mockGoogleToken)
-//       .expect({
-//         message: 'Token is required',
-//       })
-//       .expect(400);
-//   });
-
-//   // it('failed POST /auth/googlelogin with invalid idToken', async () => {
-//   //   const invalidGoogleToken = 'invalid-token';
-
-//   //   const response = await request(app)
-//   //     .post('/auth/googlelogin')
-//   //     .set("authorization", `Bearer ${invalidGoogleToken}`)
-//   //     .expect({
-//   //       message: 'Invalid Google token payload',
-//   //     }).expect(401)
-//   //     // .expect(401);
-
-//   //   // expect(response.body).toHaveProperty('message', 'Invalid Google token payload');
-//   // });
-// });
 
 jest.mock('google-auth-library'); 
 
