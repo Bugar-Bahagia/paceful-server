@@ -153,8 +153,8 @@ describe('GET /activities', () => {
         const { body, status } = response;
 
         expect(status).toBe(200);
-        expect(Array.isArray(body)).toBeTruthy();
-        expect(body.length).toBeGreaterThan(0);
+        expect(Array.isArray(body.activities)).toBeTruthy();
+        expect(body.activities.length).toBeGreaterThan(0);
         done();
       })
       .catch((err) => {

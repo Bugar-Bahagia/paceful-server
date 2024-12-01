@@ -134,8 +134,8 @@ describe('GET /goals', () => {
         const { body, status } = response;
 
         expect(status).toBe(200);
-        expect(Array.isArray(body)).toBeTruthy();
-        expect(body.length).toBeGreaterThan(0);
+        expect(Array.isArray(body.goals)).toBeTruthy();
+        expect(body.goals.length).toBeGreaterThan(0);
         done();
       })
       .catch((err) => {
