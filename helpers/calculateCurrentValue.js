@@ -3,7 +3,12 @@ const { Op } = require('sequelize');
 
 async function calculateCurrentValue(goal) {
   let currentValue = 0;
-  const activities = await Activity.findAll({ where: { UserId: goal.UserId, activityDate: { [Op.gte]: goal.startDate }, activityDate: { [Op.lte]: goal.endDate } } });
+  const activities = await Activity.findAll({
+    where: {
+      UserId: goal.UserId,
+      activityDate: { [Op.gte]: goal.startDate, [Op.lte]: goal.endDate },
+    },
+  });
   for (let activity of activities) {
     switch (goal.typeName) {
       case 'steps':
