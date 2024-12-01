@@ -6,17 +6,24 @@ const { Op } = require('sequelize');
 class GoalController {
   static async findAll(req, res, next) {
     try {
-      const result = await redis.get(`goals:${req.user.id}`);
+      const page = Number(req.query.page) || 1;
+      const limit = 5;
+      const offset = (page - 1) * limit;
+
+      const result = await redis.get(`goals:${req.user.id}:page:${page}:limit:${limit}`);
       if (result) {
         return res.json(JSON.parse(result));
       }
+
       const goals = await Goal.findAll({
         where: {
           UserId: req.user.id,
         },
+        limit: limit,
+        offset: offset,
         order: [['updatedAt', 'DESC']],
       });
-      await redis.set(`goals:${req.user.id}`, JSON.stringify(goals));
+      await redis.set(`goals:${req.user.id}:page:${page}:limit:${limit}`, JSON.stringify(goals));
       res.json(goals);
     } catch (error) {
       console.log(error);
@@ -53,7 +60,10 @@ class GoalController {
     try {
       const goal = req.goal;
       await goal.destroy();
-      await redis.del(`goals:${req.user.id}`);
+      const goalKeys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (goalKeys.length > 0) {
+        await redis.del(goalKeys);
+      }
       res.json({ message: 'Goal deleted successfully' });
     } catch (error) {
       console.log(error);
@@ -71,7 +81,10 @@ class GoalController {
       goal.currentValue = await calculateCurrentValue(goal);
       goal.isAchieved = goal.currentValue >= goal.targetValue;
       await goal.save();
-      await redis.del(`goals:${req.user.id}`);
+      const goalKeys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (goalKeys.length > 0) {
+        await redis.del(goalKeys);
+      }
       res.json(goal);
     } catch (error) {
       console.log(error);
@@ -81,9 +94,13 @@ class GoalController {
 
   static async create(req, res, next) {
     const { typeName, targetValue, startDate, endDate } = req.body;
+
     try {
       let currentValue = 0;
       const activities = await Activity.findAll({ where: { UserId: req.user.id, activityDate: { [Op.gte]: startDate }, activityDate: { [Op.lte]: endDate } } });
+      if (!activities) {
+        throw { name: 'BadRequest', message: 'Activity not found' };
+      }
       activities.forEach((activity) => {
         switch (typeName) {
           case 'steps':
@@ -104,7 +121,10 @@ class GoalController {
         }
       });
       const newGoal = await Goal.create({ UserId: req.user.id, typeName, targetValue, currentValue, startDate, endDate, isAchieved: currentValue >= targetValue });
-      await redis.del(`goals:${req.user.id}`);
+      const keys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
       res.status(201).json(newGoal);
     } catch (error) {
       console.log(error);
