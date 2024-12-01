@@ -98,7 +98,12 @@ class GoalController {
 
     try {
       let currentValue = 0;
-      const activities = await Activity.findAll({ where: { UserId: req.user.id, activityDate: { [Op.gte]: startDate }, activityDate: { [Op.lte]: endDate } } });
+      const activities = await Activity.findAll({
+        where: {
+          UserId: req.user.id,
+          activityDate: { [Op.gte]: startDate, [Op.lte]: endDate },
+        },
+      });
       if (!activities) {
         throw { name: 'BadRequest', message: 'Activity not found' };
       }
