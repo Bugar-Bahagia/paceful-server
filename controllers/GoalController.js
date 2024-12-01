@@ -104,9 +104,6 @@ class GoalController {
           activityDate: { [Op.gte]: startDate, [Op.lte]: endDate },
         },
       });
-      if (!activities) {
-        throw { name: 'BadRequest', message: 'Activity not found' };
-      }
       activities.forEach((activity) => {
         switch (typeName) {
           case 'steps':
