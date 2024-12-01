@@ -6,7 +6,11 @@ const redis = require('../config/redis');
 class ActivityController {
   static async findAll(req, res, next) {
     try {
-      const result = await redis.get(`activities:${req.user.id}`);
+      const page = Number(req.query.page) || 1;
+      const limit = 5;
+      const offset = (page - 1) * limit;
+
+      const result = await redis.get(`activities:${req.user.id}:page:${page}:limit:${limit}`);
       if (result) {
         return res.json(JSON.parse(result));
       }
@@ -15,9 +19,11 @@ class ActivityController {
         where: {
           UserId: req.user.id,
         },
+        limit: limit,
+        offset: offset,
         order: [['updatedAt', 'DESC']],
       });
-      await redis.set(`activities:${req.user.id}`, JSON.stringify(activities));
+      await redis.set(`activities:${req.user.id}:page:${page}:limit:${limit}`, JSON.stringify(activities));
       res.json(activities);
     } catch (error) {
       console.log(error);
@@ -72,8 +78,14 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
-      await redis.del(`activities:${req.user.id}`);
-      await redis.del(`goals:${req.user.id}`);
+      const activityKeys = await redis.keys(`activities:${req.user.id}:page:*`);
+      if (activityKeys.length > 0) {
+        await redis.del(activityKeys);
+      }
+      const goalKeys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (goalKeys.length > 0) {
+        await redis.del(goalKeys);
+      }
       res.status(201).json(newActivity);
     } catch (error) {
       console.log(error);
@@ -135,8 +147,14 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
-      await redis.del(`goals:${req.user.id}`);
-      await redis.del(`activities:${req.user.id}`);
+      const goalKeys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (goalKeys.length > 0) {
+        await redis.del(goalKeys);
+      }
+      const activityKeys = await redis.keys(`activities:${req.user.id}:page:*`);
+      if (activityKeys.length > 0) {
+        await redis.del(activityKeys);
+      }
       res.json(activity);
     } catch (error) {
       console.log(error);
@@ -188,8 +206,14 @@ class ActivityController {
         await Goal.update({ currentValue: updatedValue, isAchieved, updatedAt: new Date() }, { where: { id: goal.id }, transaction: t });
       }
       await t.commit();
-      await redis.del(`goals:${req.user.id}`);
-      await redis.del(`activities:${req.user.id}`);
+      const goalKeys = await redis.keys(`goals:${req.user.id}:page:*`);
+      if (goalKeys.length > 0) {
+        await redis.del(goalKeys);
+      }
+      const activityKeys = await redis.keys(`activities:${req.user.id}:page:*`);
+      if (activityKeys.length > 0) {
+        await redis.del(activityKeys);
+      }
       res.json({ message: 'Activity deleted successfully' });
     } catch (error) {
       console.log(error);

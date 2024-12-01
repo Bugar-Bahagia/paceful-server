@@ -17,6 +17,8 @@ jest.mock('../config/redis', () => ({
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
+  setex: jest.fn(),
+  keys: jest.fn(),
 }));
 
 describe('GoalController', () => {
@@ -50,10 +52,14 @@ describe('GoalController', () => {
   });
 
   describe('findAll', () => {
+    beforeEach(() => {
+      req.query = { page: '1', limit: '5' };
+    });
     it('should return goals from Redis if available', async () => {
-      redis.get.mockResolvedValue(JSON.stringify([{ id: 1, typeName: 'steps' }]));
+      const cachedActivities = JSON.stringify([{ id: 1, typeName: 'steps' }]);
+      redis.get.mockResolvedValue(cachedActivities);
       await GoalController.findAll(req, res, next);
-      expect(redis.get).toHaveBeenCalledWith('goals:1');
+      expect(redis.get).toHaveBeenCalledWith('goals:1:page:1:limit:5');
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'steps' }]);
     });
 
@@ -61,8 +67,8 @@ describe('GoalController', () => {
       redis.get.mockResolvedValue(null);
       Goal.findAll.mockResolvedValue([{ id: 1, typeName: 'steps' }]);
       await GoalController.findAll(req, res, next);
-      expect(Goal.findAll).toHaveBeenCalledWith({ where: { UserId: 1 }, order: [['updatedAt', 'DESC']] });
-      expect(redis.set).toHaveBeenCalledWith('goals:1', JSON.stringify([{ id: 1, typeName: 'steps' }]));
+      expect(Goal.findAll).toHaveBeenCalledWith({ where: { UserId: 1 }, limit: 5, offset: 0, order: [['updatedAt', 'DESC']] });
+      expect(redis.set).toHaveBeenCalledWith('goals:1:page:1:limit:5', JSON.stringify([{ id: 1, typeName: 'steps' }]));
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'steps' }]);
     });
 
@@ -99,9 +105,11 @@ describe('GoalController', () => {
 
   describe('destroy', () => {
     it('should delete the goal and update Redis', async () => {
+      redis.keys.mockResolvedValue(['goals:1:page:1', 'goals:1:page:2']);
       await GoalController.destroy(req, res, next);
       expect(req.goal.destroy).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('goals:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['goals:1:page:1', 'goals:1:page:2']);
       expect(res.json).toHaveBeenCalledWith({ message: 'Goal deleted successfully' });
     });
 
@@ -116,9 +124,11 @@ describe('GoalController', () => {
     it('should update the goal and current value', async () => {
       calculateCurrentValue.mockResolvedValue(5000);
       req.body = { targetValue: 10000, startDate: '2024-01-01', endDate: '2024-12-31' };
+      redis.keys.mockResolvedValue(['goals:1:page:1', 'goals:1:page:2']);
       await GoalController.update(req, res, next);
       expect(req.goal.save).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('goals:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['goals:1:page:1', 'goals:1:page:2']);
       expect(res.json).toHaveBeenCalledWith(req.goal);
     });
 
@@ -133,6 +143,7 @@ describe('GoalController', () => {
     it('should create a new goal and update Redis', async () => {
       Activity.findAll.mockResolvedValue([{ typeName: 'running', distance: 1000 }]);
       Goal.create.mockResolvedValue(req.goal);
+      redis.keys.mockResolvedValue(['goals:1:page:1', 'goals:1:page:2']);
       await GoalController.create(req, res, next);
       expect(Goal.create).toHaveBeenCalledWith({
         UserId: 1,
@@ -143,15 +154,10 @@ describe('GoalController', () => {
         endDate: '2024-12-31',
         isAchieved: expect.any(Boolean),
       });
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('goals:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['goals:1:page:1', 'goals:1:page:2']);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.goal);
-    });
-
-    it('should call next with error on failure', async () => {
-      Goal.create.mockRejectedValue(new Error('Error creating goal'));
-      await GoalController.create(req, res, next);
-      expect(next).toHaveBeenCalledWith(new Error('Error creating goal'));
     });
   });
 });

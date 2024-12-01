@@ -21,6 +21,8 @@ jest.mock('../config/redis', () => ({
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
+  setex: jest.fn(),
+  keys: jest.fn(),
 }));
 
 describe('ActivityController', () => {
@@ -56,19 +58,23 @@ describe('ActivityController', () => {
   });
 
   describe('findAll', () => {
+    beforeEach(() => {
+      req.query = { page: '1', limit: '5' };
+    });
     it('should return activities from Redis if available', async () => {
-      redis.get.mockResolvedValue(JSON.stringify([{ id: 1, typeName: 'running' }]));
+      const cachedActivities = JSON.stringify([{ id: 1, typeName: 'running' }]);
+      redis.get.mockResolvedValue(cachedActivities);
       await ActivityController.findAll(req, res, next);
-      expect(redis.get).toHaveBeenCalledWith('activities:1');
-      expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'running' }]);
+      expect(redis.get).toHaveBeenCalledWith('activities:1:page:1:limit:5');
+      expect(res.json).toHaveBeenCalledWith(JSON.parse(cachedActivities));
     });
 
     it('should fetch activities from the database if not in Redis', async () => {
       redis.get.mockResolvedValue(null);
       Activity.findAll.mockResolvedValue([{ id: 1, typeName: 'running' }]);
       await ActivityController.findAll(req, res, next);
-      expect(Activity.findAll).toHaveBeenCalledWith({ where: { UserId: 1 }, order: [['updatedAt', 'DESC']] });
-      expect(redis.set).toHaveBeenCalledWith('activities:1', JSON.stringify([{ id: 1, typeName: 'running' }]));
+      expect(Activity.findAll).toHaveBeenCalledWith({ where: { UserId: 1 }, limit: 5, offset: 0, order: [['updatedAt', 'DESC']] });
+      expect(redis.set).toHaveBeenCalledWith('activities:1:page:1:limit:5', JSON.stringify([{ id: 1, typeName: 'running' }]));
       expect(res.json).toHaveBeenCalledWith([{ id: 1, typeName: 'running' }]);
     });
 
@@ -89,16 +95,17 @@ describe('ActivityController', () => {
 
   describe('create', () => {
     it('should create a new activity and update related goals for steps', async () => {
-      req.body.typeName = 'steps';
       calculateCalories.mockReturnValue(100);
+      req.body.typeName = 'running';
       Activity.create.mockResolvedValue(req.activity);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'steps', targetValue: 10000 }]);
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.create(req, res, next);
-      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'steps', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
+      expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'running', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
       expect(Goal.update).toHaveBeenCalledWith({ currentValue: Math.round(5 * 1.3123), isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
@@ -108,12 +115,13 @@ describe('ActivityController', () => {
       calculateCalories.mockReturnValue(100);
       Activity.create.mockResolvedValue(req.activity);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'distance', targetValue: 10000 }]);
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.create(req, res, next);
       expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'distance', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
       expect(Goal.update).toHaveBeenCalledWith({ currentValue: 5, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
@@ -123,12 +131,13 @@ describe('ActivityController', () => {
       calculateCalories.mockReturnValue(100);
       Activity.create.mockResolvedValue(req.activity);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'calories burned', targetValue: 10000 }]);
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.create(req, res, next);
       expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'calories burned', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
       expect(Goal.update).toHaveBeenCalledWith({ currentValue: 100, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
@@ -138,12 +147,13 @@ describe('ActivityController', () => {
       calculateCalories.mockReturnValue(100);
       Activity.create.mockResolvedValue(req.activity);
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'duration', targetValue: 10000 }]);
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.create(req, res, next);
       expect(Activity.create).toHaveBeenCalledWith({ UserId: 1, typeName: 'duration', duration: 30, distance: 5, notes: 'Morning run', activityDate: '2024-01-01', caloriesBurned: 100 }, { transaction });
       expect(Goal.update).toHaveBeenCalledWith({ currentValue: 30, isAchieved: false, updatedAt: expect.any(Date) }, { where: { id: 1 }, transaction });
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
@@ -164,7 +174,7 @@ describe('ActivityController', () => {
       req.body.distance = 7; // New distance
       calculateCalories.mockReturnValue(100); // New calories burned
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'steps', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.update(req, res, next);
 
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
@@ -177,8 +187,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
@@ -188,7 +198,7 @@ describe('ActivityController', () => {
       req.body.distance = 10; // New distance
       calculateCalories.mockReturnValue(100); // New calories burned
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'distance', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.update(req, res, next);
 
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
@@ -201,8 +211,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
@@ -212,7 +222,7 @@ describe('ActivityController', () => {
       req.body.duration = 30; // New duration
       calculateCalories.mockReturnValue(100); // New calories burned
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'calories burned', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.update(req, res, next);
 
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
@@ -225,8 +235,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
@@ -236,7 +246,7 @@ describe('ActivityController', () => {
       req.body.duration = 60; // New duration
       calculateCalories.mockReturnValue(100); // New calories burned
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 0, typeName: 'duration', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.update(req, res, next);
 
       expect(req.activity.save).toHaveBeenCalledWith({ transaction });
@@ -249,8 +259,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith(req.activity);
     });
 
@@ -289,7 +299,7 @@ describe('ActivityController', () => {
       req.activity.distance = 5; // Old distance
 
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'steps', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.destroy(req, res, next);
 
       expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
@@ -302,8 +312,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
     });
 
@@ -312,7 +322,7 @@ describe('ActivityController', () => {
       req.activity.distance = 5; // Old distance
 
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'distance', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.destroy(req, res, next);
 
       expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
@@ -325,8 +335,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
     });
 
@@ -335,7 +345,7 @@ describe('ActivityController', () => {
       req.activity.caloriesBurned = 100; // Old calories burned
 
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'calories burned', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.destroy(req, res, next);
 
       expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
@@ -348,8 +358,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
     });
 
@@ -358,7 +368,7 @@ describe('ActivityController', () => {
       req.activity.duration = 30; // Old duration
 
       Goal.findAll.mockResolvedValue([{ id: 1, currentValue: 100, typeName: 'duration', targetValue: 10000 }]);
-
+      redis.keys.mockResolvedValue(['activities:1:page:1', 'activities:1:page:2']);
       await ActivityController.destroy(req, res, next);
 
       expect(req.activity.destroy).toHaveBeenCalledWith({ transanction: transaction });
@@ -371,8 +381,8 @@ describe('ActivityController', () => {
         { where: { id: 1 }, transaction }
       );
       expect(transaction.commit).toHaveBeenCalled();
-      expect(redis.del).toHaveBeenCalledWith('goals:1');
-      expect(redis.del).toHaveBeenCalledWith('activities:1');
+      expect(redis.keys).toHaveBeenCalledWith('activities:1:page:*');
+      expect(redis.del).toHaveBeenCalledWith(['activities:1:page:1', 'activities:1:page:2']);
       expect(res.json).toHaveBeenCalledWith({ message: 'Activity deleted successfully' });
     });
 
