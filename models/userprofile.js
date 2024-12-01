@@ -1,5 +1,9 @@
 'use strict';
+
+const { createAvatar } = require('@dicebear/avatars');
+const style = require('@dicebear/avatars-initials-sprites');
 const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class UserProfile extends Model {
     static associate(models) {
@@ -47,12 +51,27 @@ module.exports = (sequelize, DataTypes) => {
             msg: 'Date of birth cannot be null',
           },
         }
-      }
+      },
+      avatar: {
+        type: DataTypes.STRING,
+        allowNull: true, 
+      },
     },
     {
       sequelize,
       modelName: 'UserProfile',
     }
   );
+  
+  UserProfile.beforeCreate((userProfile) => {
+    if (!userProfile.avatar) {
+      const seed = userProfile.name || Math.random().toString(36).substr(2, 5); 
+      const style = 'adventurer-neutral';
+      userProfile.avatar = `https://api.dicebear.com/6.x/${style}/svg?seed=${seed}`; 
+    }
+  });
+
   return UserProfile;
+  
 };
+
