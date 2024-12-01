@@ -9,29 +9,51 @@ const deleteAllRedis = require('../helpers/deleteAllRedis.js');
 let token;
 const invalidToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJRaWx1bmdAbWFpbC5jb20iLCJpYXQiOjE3MzI4MzgwNTR9.iyOP-gZm0sRWfkvLZcXX9AP018gyJqPXFBaW1Di6B2A';
 
-afterAll((done) => {
-  queryInterface
-    .bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true })
-    .then(() => {
-      return queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
-    })
-    .then(() => {
-      return deleteAllRedis();
-    })
-    .then(() => {
-      redis.disconnect();
-      done();
-    })
-    .catch((err) => done(err));
+
+
+afterAll(async () => {
+  try {
+    await queryInterface.removeColumn('UserProfiles', 'avatar');
+    await queryInterface.bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
+    await queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
+    await deleteAllRedis();
+    redis.disconnect();
+  } catch (error) {
+    console.error('Error during afterAll:', error);
+    throw error;
+  }
 });
 
+// afterAll((done) => {
+//   queryInterface
+//     .bulkDelete('Users', null, { truncate: true, cascade: true, restartIdentity: true })
+//     .then(() => {
+//       return queryInterface.bulkDelete('Activities', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return queryInterface.bulkDelete('Goals', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return queryInterface.bulkDelete('UserProfiles', null, { truncate: true, cascade: true, restartIdentity: true });
+//     })
+//     .then(() => {
+//       return deleteAllRedis();
+//     })
+//     .then(() => {
+//       redis.disconnect();
+//       done();
+//     })
+//     .catch((err) => done(err));
+// });
+
 beforeAll(async () => {
+  await queryInterface.addColumn('UserProfiles', 'avatar', {
+    type: sequelize.Sequelize.STRING,
+    allowNull: true,
+  });
+  
   await request(app)
     .post('/auth/register')
     .send({

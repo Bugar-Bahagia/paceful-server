@@ -39,7 +39,7 @@ module.exports = class AuthController {
         data: result,
       });
     } catch (error) {
-      // console.error(error);
+      console.error(error);
       next(error);
     }
   }
@@ -76,7 +76,7 @@ module.exports = class AuthController {
 
       res.status(200).json({ access_token });
     } catch (error) {
-      // console.log(error);
+      console.log(error);
       next(error);
     }
   }
@@ -132,7 +132,8 @@ module.exports = class AuthController {
       const access_token = signToken({ id: user.id, email: user.email })
       return res.status(200).json({ access_token })
     } catch (error) {
-      // console.log(err)
+      console.log(error);
+      
       next(error)
     }
   }
