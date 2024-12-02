@@ -1,3 +1,4 @@
+const { DateTime } = require('luxon');
 const { Activity } = require('../models/');
 const { Op } = require('sequelize');
 
@@ -6,7 +7,7 @@ async function calculateCurrentValue(goal) {
   const activities = await Activity.findAll({
     where: {
       UserId: goal.UserId,
-      activityDate: { [Op.gte]: goal.startDate, [Op.lte]: goal.endDate },
+      activityDate: { [Op.gte]: `${DateTime.fromISO(new Date(goal.startDate).toISOString()).toFormat('yyyy-LL-dd HH:mm:ssZZ')}`, [Op.lte]: `${DateTime.fromISO(new Date(goal.endDate).toISOString()).toFormat('yyyy-LL-dd HH:mm:ssZZ')}` },
     },
   });
   for (let activity of activities) {

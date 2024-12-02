@@ -1,7 +1,8 @@
+const { DateTime } = require('luxon');
 const redis = require('../config/redis');
 const calculateCurrentValue = require('../helpers/calculateCurrentValue');
 const { Goal, Activity } = require('../models/');
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
 
 class GoalController {
   static async findAll(req, res, next) {
@@ -104,7 +105,7 @@ class GoalController {
       const activities = await Activity.findAll({
         where: {
           UserId: req.user.id,
-          activityDate: { [Op.gte]: startDate, [Op.lte]: endDate },
+          activityDate: { [Op.gte]: `${DateTime.fromISO(new Date(startDate).toISOString()).toFormat('yyyy-LL-dd HH:mm:ssZZ')}`, [Op.lte]: `${DateTime.fromISO(new Date(endDate).toISOString()).toFormat('yyyy-LL-dd HH:mm:ssZZ')}` },
         },
       });
       activities.forEach((activity) => {
