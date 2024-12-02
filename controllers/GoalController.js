@@ -95,6 +95,9 @@ class GoalController {
 
   static async create(req, res, next) {
     const { typeName, targetValue, startDate, endDate } = req.body;
+    if (!startDate || !endDate) {
+      throw { name: 'BadRequest', message: 'Start date and end date are required' };
+    }
 
     try {
       let currentValue = 0;
