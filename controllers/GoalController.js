@@ -95,11 +95,11 @@ class GoalController {
 
   static async create(req, res, next) {
     const { typeName, targetValue, startDate, endDate } = req.body;
-    if (!startDate || !endDate) {
-      throw { name: 'BadRequest', message: 'Start date and end date are required' };
-    }
 
     try {
+      if (!startDate || !endDate) {
+        throw { name: 'BadRequest', message: 'Start date and end date are required' };
+      }
       let currentValue = 0;
       const activities = await Activity.findAll({
         where: {
