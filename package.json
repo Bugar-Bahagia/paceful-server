@@ -1,0 +1,33 @@
+{
+  "name": "paceful-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "dev": "npx nodemon ./bin/www",
+    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage --verbose --silent"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dicebear/avatars": "^4.10.8",
+    "@dicebear/avatars-initials-sprites": "^4.10.8",
+    "@google/generative-ai": "^0.21.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "google-auth-library": "^9.15.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.5.0",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "sequelize-cli": "^6.6.2",
+    "supertest": "^7.0.0"
+  }
+}
