@@ -52,3 +52,10 @@ To run tests, run the following command
 ```bash
   npm run test
 ```
+
+## Tech Stack
+
+- ExpressJS
+- PostgreSQL
+- Redis
+- AWS EC2
